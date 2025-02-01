@@ -1,8 +1,30 @@
 /*
 	/=======================================================================\
 	|Project Notes
-	|	Routing number: 122100024 (Chase Bank, for Arizona?)
-	|	Account Number: (9 Digits)
+	|	TODO Functions:
+	|		[X]	Function: Read CSV file into script cleanly.
+	|		[X]	Function: Output a tab-separated txt for preview.
+	|		[ ]	Function: Import new instances of Employee/Accounts into separate database.
+	|			[ ]	SubFunction: Run sanity checks against this database to verify any changes since the last time.
+	|		[ ]	Function: Generate a Nacha-formatted array of lines from PayrollArray()
+	|			Of course, this should be done after the import of CSV is reviewed and confirmed.
+	|		[ ]	Function: Output Nacha-formatted .ach file(s) from the array of Nacha Lines.
+	|	TODO Features:
+	|		[ ]	Feature: (Required) Split Nacha files by an upper limit applied to the running total.
+	|			This can be done by returning an array of processed arrays from PayrollArray().
+	|			Each array would have <= maxPayrollAmount. (For now, we'll call this $500K.)
+	|			Alternatively, this can be done later during the Nacha file generation stage.
+	|			Before an entry is added, its amount can be checked.
+	|			If the amount is above maxPayrollAmount, we can finalize that Nacha file, and start with a new one.
+	|		[ ]	Feature: Load payroll/script parameters from separate .ini or .txt file.
+	|			This would make it much easier to adjust values after compilation.
+	|		[ ] Feature: Separate Nacha file validator to import and verify .ach files on-demand.
+	|	TODO Minutae/QoL:
+	|		[X] Add icons in the tray for visual status indication of script activity.
+	|		[ ] Add descriptive tooltips on the tray icon to explain its current state.
+	|		[ ] Add a brief splash screen on launch, so it's obvious when we launch it.
+	|	Queries:
+	|		[ ] When a deposit is made to an employee account, do we HAVE to specify if it's a checking/savings/credit?
 	\=======================================================================/
 */
 
@@ -48,16 +70,35 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "0.01"
+scriptVersion := "0.02"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 NachaIconFile := "NachaIcon.ico"
 busyIconFile := "NachaBusyIcon.ico"
 errorIconFile := "NachaErrorIcon.ico"
+okIconFile := "NachaOKIcon.ico"
 A_IconTip := "NachaLibre v." . scriptVersion
 A_ScriptName := "NachaLibre"
 if FileExist(NachaIconFile)
     TraySetIcon NachaIconFile
+
+csvFileName := "SampleCSV.csv"
+NachaFileFolderName := "NachaFiles"
+nachaFileName := "NachaFile"
+auditLogFileFolderName := "AuditLogs"
+auditLogFileName := "AuditLog"
+
+/*
+	/=======================================================================\
+	|Payroll Settings
+	|	These settings are for specific payroll parameters.
+	|	Adjust these to your specific use case.
+	\=======================================================================/
+*/
+maxPayrollAmount := 5000000 ;Upper bound on which to split Nacha submissions (dependent on bank).
+payrollRoutingNumber := 123456789 ;Routing number of bank from which the payroll will be withdrawn.
+payrollAccountNumber := 987654321 ;Account number from which the payroll will be withdrawn.
+payrollEIN := "12-3456789" ;Number to identify the business entity for tax purposes.
 
 /*
 	/=======================================================================\
@@ -70,7 +111,12 @@ if FileExist(NachaIconFile)
 Pause::Pause
 +F12::Reload
 ^+F12::ExitApp
-Hotkey "F11", ReadCSVFileTest
+F11::
+{
+	PayrollArray := ReadCSVFile(csvFileName)
+	OutputPreviewFile(PayrollArray, auditLogFileFolderName, auditLogFileName)
+	return
+}
 
 /*
 	/=======================================================================\
@@ -80,23 +126,15 @@ Hotkey "F11", ReadCSVFileTest
 	\=======================================================================/
 */
 
-/*
-	/=======================================================================\
-	|Beta Functions
-	|	Here be dragons.
-	|	Functions here are under active development.
-	\=======================================================================/
-*/
-
-ReadCSVFileTest(HotkeyName) ;Test for parsing the target CSV file, line by line, field by field.
+ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by field.
 {
 	TraySetIcon busyIconFile
 	;Load CSV file into an variable.
-	csvFile := FileRead("SampleCSV.csv")
+	csvFile := FileRead(fileNameToRead)
 	;Create an array for rows.
 	CSVArray := []
 	;We now go through the CSV, row by row.
-	Loop Parse csvFile, "`n"
+	Loop Parse csvFile, "`n", "`r"
 	{
 		;Create an array of columns.
 		RowContents := []
@@ -104,7 +142,7 @@ ReadCSVFileTest(HotkeyName) ;Test for parsing the target CSV file, line by line,
 		Loop parse, A_LoopField, ","
 		{
 			;Add the column content into the array of column items.
-			RowContents.Push(A_LoopField)
+			RowContents.Push(Trim(A_LoopField,"$ `r`n"))
 		}
 		;Add that row of column contents onto the array of rows.
 		CSVArray.Push(RowContents)
@@ -116,45 +154,62 @@ ReadCSVFileTest(HotkeyName) ;Test for parsing the target CSV file, line by line,
 	return CSVArray
 }
 
-OutputAuditFile(*) ;Test to output summary of transactions, and maintain running totals.
-{
-	; Should output amounts deposited to each account.
-	return
-}
+/*
+	/=======================================================================\
+	|Beta Functions
+	|	Here be dragons.
+	|	Functions here are under active development.
+	\=======================================================================/
+*/
 
-CreateFile(*) ;Test to create a blank Nacha file.
+OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output summary of transactions, useful for maintaining running totals.
 {
-	return
-}
-
-DeleteFile(*) ;Test to delete any preexisting Nacha file.
-{
-	;TODO: Pass this function a file as an argument, so we don't hard-code the file pathname.
 	TraySetIcon busyIconFile
-	;Delete existing Nacha file if it already exists.
-	while FileExist("BlankNachaFile.ach")
+	dateStamp := A_YYYY . A_MM . A_DD . A_Hour . A_Min . A_Sec
+	runningTotal := 0
+	;Let's go through the array of entries passed to this function.
+	for entryIndex, EntryContents in ArrayOfEntriesToLog
 	{
-		if (A_Index >= 5)
+		;Add a date/time stamp as the first field on each entry when we log it.
+		A_Index = 1 ? outputLogData .= "Date" . A_Tab : outputLogData .= dateStamp . A_Tab
+		;And for each entry, let's go through each field.
+		for entryField, entryData in EntryContents
 		{
-			;Give a heads-up if the file refuses to be deleted.
-			TraySetIcon ErrorIconFile
-			MsgBox "It just... won't... die.`nCouldn't delete the existing file after five tries.", "Couldn't Delete File", "Icon!"
-			TraySetIcon NachaIconFile
-			return
+			;Append each field's contents to the output log, separated by tabs.
+			if A_Index != 5
+			{
+				;Insert a tab if the field isn't the last in the row.
+				entryData .= A_Tab
+			}
+			outputLogData .= entryData
+			;Add the entryAmount to a running total for a summary.
+			;Later, this running total will be used to determine if a Nacha file has to be split by an upper limit.
+			if A_Index = 5 && entryData != "Amount"
+			{
+				runningTotal += entryData
+			}
 		}
-		FileDelete("BlankNachaFile.ach")
-		Sleep 200
-		if FileExist("BlankNachaFile.ach")
-		{
-			;If the file still exists, attempt to delete it again.
-			continue
-		}
-		if !FileExist("BlankNachaFile.ach")
-		{
-			MsgBox "There was a Nacha file.`nNow there is not.`nCarry on.", "Preexisting Nacha file removed.", "Iconi"
-			TraySetIcon NachaIconFile
-			return
-		}
+		outputLogData .= "`n"
+	}
+	outputLogData := "Process Total: $" . Round(runningTotal, 2) . "`n" . outputLogData
+	previewFile := logLocation . "\Previews\" . "(Preview) " . outputFile . " " . dateStamp . ".txt"
+	DirCreate(logLocation . "\Previews\")
+	FileAppend(outputLogData, previewFile)
+	Run previewFile
+	TraySetIcon okIconFile
+	Sleep 1000
+	importConfirmation := MsgBox("Please review the imported CSV.`nWe need to make sure it looks right.`nOnce reviewed, come back here and confirm.`n`nDoes the file of $" . Round(runningTotal, 2) . " look correct?","CSV Import Review","Icon? YesNo")
+	if importConfirmation = "Yes"
+	{
+		TraySetIcon busyIconFile
+		outputFile := logLocation . "\" . outputFile . " " . dateStamp . ".txt"
+		FileAppend(outputLogData, outputFile)
+		TraySetIcon okIconFile
+		MsgBox("Alrighty.`nYou can close the preview of the imported data if you don't need it.`n(A copy is saved.)`nWe can now proceed with processing the data into Nacha format.","CSV Review Complete","Iconi")
+	}else if importConfirmation = "No"
+	{
+		TraySetIcon ErrorIconFile
+		MsgBox("Okiedokes.`nGo ahead and make corrections to the CSV file where necessary.`nWe can try again later with the revised version.","CSV Data Not Accepted","Icon!")
 	}
 	TraySetIcon NachaIconFile
 	return

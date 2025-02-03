@@ -5,7 +5,10 @@
 	|	Intended to simplify Excel-based payroll tasks.
 	|Project Notes
 	|	Current Task(s):
-	|		[ ]	Establish variables defining Nacha file format parameters.
+	|		[ ]	Nacha file construction functionality.
+	|			The real work begins here... a function to properly concatenate fields into 94-character lines.
+	|			Will also need on-the-fly sanity checks to GUARANTEE data is PERFECTLY error-free.
+	|			Working in the real world, where real damage can be done if not careful. Have to get this airtight.
 	|	TODO Functions:
 	|		[X]	Function: Read CSV file into script cleanly.
 	|		[X]	Function: Output a tab-separated txt for preview.
@@ -31,10 +34,12 @@
 	|		[ ] Add a brief splash screen on launch, so it's obvious when we launch it.
 	|		[ ]	Make some useful, human-readable documentation for any other mortal souls going through this in the future.
 	|	Queries:
-	|		[ ] When a deposit is made to an employee account, do we HAVE to specify if it's a checking/savings/credit?
-	|			One would think that the recipient account number would be implicitly one type or another...
+	|		[ ] When a deposit is made to an employee account, we HAVE to specify whether it's a checking or savings account.
+	|			This means it involves a bit of tedious work, gathering the type of each employee's account number, routing, and type.
 	|		[ ] Should we add handling for employee first/last names being entered as a single string, rather than separated?
 	|			(This is a nice idea, but this should be considered common-sense to have the surname/firstname as separate.)
+	|		[ ] Is there a way to easily determine in bulk what type of account each employee has (checking/savings)?
+	|			Please... for the love of all that's holy, PLEASE let this not necessitate several hundred phone calls and research by employees...
 	\=======================================================================/
 */
 
@@ -83,9 +88,9 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "0.06"
+scriptVersion := "0.07"
 scriptAuthor := "TrevorLaneRay"
-HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6]
+HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6, 5.5]
 ;Create a little tray icon info.
 NachaIconFile := "NachaIcon.ico"
 busyIconFile := "NachaIconYellow.ico"
@@ -114,10 +119,12 @@ auditLogFileName := "AuditLog"
 
 ;Payroll Settings
 maxPayrollAmount := 5000000 ;Upper limit of dollars at which to split Nacha submissions (dependent on bank?).
+payPeriodBegin := DateAdd(A_Now, -14, "days") ;Date that the pay period began. (This should be input by the user manually.)
+payPeriodEnd := A_Now ;Date that the pay period ended. (This should be input by the user manually.)
 payrollBankName := "JPMORGAN CHASE" ;Name of the bank the payroll will be sent from.
 payrollCompanyName := "HURP DERP LLC" ;Name of your company. Needs to be upper case. A-Z, space, and periods, max 23 chars.
 payrollRecipientCompanyName := "Hurp Derp LLC" ;Name of your company. (Same as above, but will be what appears in an employee's bank statement. Max 16 chars.)
-payrollRoutingNumber := "123456789" ;Routing number of bank from which the payroll will be withdrawn.
+payrollRoutingNumber := "123456789" ;9-digit routing number of bank from which the payroll will be withdrawn. (Lead with zeros if less than 9 chars.)
 payrollAccountNumber := "987654321" ;Account number from which the payroll will be withdrawn.
 payrollEIN := "12-3456789" ;String to identify the business entity for tax purposes. (10 chars, leading zeros.)
 
@@ -131,7 +138,7 @@ payrollEIN := "12-3456789" ;String to identify the business entity for tax purpo
 	\=======================================================================/
 */
 
-;~ File Header Record (The first line in the Nacha file.)
+;~ File Header Record (The first line in the Nacha file, beginning with '1'.)
 
 ;Record Type Code - Value should only ever be '1'. This identifies the line as the file header record.
 fileHeaderRecordPosition1 := 1
@@ -150,11 +157,11 @@ fileHeaderRecordPosition4 := 14
 fileHeaderRecordLength4 := 10
 ;~ fileHeaderRecordValue4 := payrollEIN
 fileHeaderRecordValue4 := "0000000000" ;If Chase lets us use our EIN, delete this line and use the previous line instead.
-;File Creation Date - Date the input file was created. (This will be redetermined later when the file is actually created.)
+;File Creation Date - Date the input file was created. (This will be recalculated later when the file is actually created.)
 fileHeaderRecordPosition5 := 24
 fileHeaderRecordLength5 := 6
 fileHeaderRecordValue5 := FormatTime(A_Now, "yyMMdd")
-;File Creation Time - Time of day the input file was created. (This will be redetermined later when the record is added to the file.)
+;File Creation Time - Time of day the input file was created. (This will be recalculated later when the record is added to the file.)
 fileHeaderRecordPosition6 := 30
 fileHeaderRecordLength6 := 4
 fileHeaderRecordValue6 := FormatTime(A_Now, "HHmm")
@@ -222,11 +229,13 @@ batchHeaderRecordValue6 := "PPD"
 batchHeaderRecordPosition7 := 54
 batchHeaderRecordLength7 := 10
 batchHeaderRecordValue7 := "PAYROLL"
-;Company Descriptive Date - Seems to be flexible/optional, but it's essentially used as a "descriptive Payday date." Chase describes it as MMM DD (JAN 02). Likely is what will appear on bank statements.
-;Since we might not be generating the Nacha file ON the actual payday, we might need to ask the user what date to put here. For now, we'll assume it's the day we create the Nacha file.
+;Company Descriptive Date - Seems to be flexible/optional, but it's essentially used as a "descriptive Payday date."
+	;Chase describes it as MMM DD (JAN 02). Likely is what will appear on bank statements.
+	;Since we likely will not be generating the Nacha file ON the actual payday, we will need to ask the user what date to put here.
+	;For initial purposes here, we'll use the day after create the Nacha file.
 batchHeaderRecordPosition8 := 64
 batchHeaderRecordLength8 := 6
-batchHeaderRecordValue8 := FormatTime(A_Now, "MMM dd")
+batchHeaderRecordValue8 := FormatTime(DateAdd(A_Now, 1, "days") "MMM dd")
 ;Effective Entry Date - MUST be later than the file creation date, according to Chase. We'll just add one day to today for use here? (6chars, yymmdd)
 batchHeaderRecordPosition9 := 70
 batchHeaderRecordLength9 := 6
@@ -239,25 +248,191 @@ batchHeaderRecordValue10 := "   "
 batchHeaderRecordPosition11 := 79
 batchHeaderRecordLength11 := 1
 batchHeaderRecordValue11 := "1"
-;Originating DFI Identification - The transit routing number of the originating financial institution. For all intents and purposes, this should be the same as the one in the file header. (8chars, Leading zeros.)
+;Originating DFI Identification - The first 8 digits of the transit routing number of the originating financial institution.
+	;For all intents and purposes, this should be derived from the same one that's in the file header.
 batchHeaderRecordPosition12 := 80
 batchHeaderRecordLength12 := 8
-batchHeaderRecordValue12 := payrollRoutingNumber
+batchHeaderRecordValue12 := SubStr(payrollRoutingNumber, 1, 8)
 ;Batch Number - The heck is a batch? How many can fit in a batch? How many batches can a natcha batch, Stretch? (7chars, leading zeros, iterating +1 for each batch.)
-;Just guessing here, but I'm guessing each "batch" is a separate transaction for the company payroll. Doesn't seem to have an upper limit on number of items in a batch, or number of batches. 9,999,999?
-;Thus, if the bank has an upper limit on the amount of each "transaction," then we may need to iterate this.
+	;Just guessing here, but I'm guessing each "batch" is a separate transaction for the company payroll.
+	;Doesn't seem to have an upper limit on number of items in a batch, or number of batches. 9,999,999?
+	;Thus, if the bank has an upper limit on the amount of each "transaction," then we may need to iterate this.
 batchHeaderRecordPosition13 := 88
 batchHeaderRecordLength13 := 7
-batchHeaderRecordValue13 := 1
+batchHeaderRecordValue13 := "0000001"
 
-;~ PPD Detail Record
+;~ PPD Detail Record (The line beginning with '6'.)
 	;~ This record contains the information needed to post a deposit to an account, such as the receiver's name, account number, and payment amount.
 
-;~ Batch Control Total
+;Record Type Code - Identifies this row as the Entry Detail Record. Will always be '6'.
+entryDetailRecordPosition1 := 1
+entryDetailRecordLength1 := 1
+entryDetailRecordValue1 := "6"
+;Transaction Code - Identifies the type of account to/from which to deposit or withdraw funds. (This will be fetched from imported CSV data.)
+	;Deposit to checking account: 22
+	;Deposit to savings account: 32
+entryDetailRecordPosition2 := 2
+entryDetailRecordLength2 := 2
+entryDetailRecordValue2 := "22"
+;Receiving DFI ID - First eight digits of the employee's bank's 9-digit routing number. (This will be fetched from imported CSV data.)
+entryDetailRecordPosition3 := 4
+entryDetailRecordLength3 := 8
+entryDetailRecordValue3 := SubStr("REPLACEMEWITHEMPLOYEEROUTINGNUMBER", 1, 8)
+;Check Digit - Last digit of the employee's bank's 9-digit routing number. (This will be fetched from imported CSV data.)
+entryDetailRecordPosition4 := 12
+entryDetailRecordLength4 := 1
+entryDetailRecordValue4 := SubStr("REPLACEMEWITHEMPLOYEEROUTINGNUMBER", -1, 1)
+;DFI Account Number - Bank account number of the employee. This can apparently be alphanumeric, not just numbers.
+entryDetailRecordPosition5 := 13
+entryDetailRecordLength5 := 17
+entryDetailRecordValue5 := "0123456789ABCDEFG"
+;Dollar Amount - Formatted as 00$$¢¢ (i.e.: "0000012345" would be $123.45).
+entryDetailRecordPosition6 := 30
+entryDetailRecordLength6 := 10
+entryDetailRecordValue6 := "0000000000"
+;Individual Identification Number - Identifies the Reciver's ID in batch. Uppercase A-Z, or 0-9. (Mandatory for Chase. Could this be company internal employee number?)
+entryDetailRecordPosition7 := 40
+entryDetailRecordLength7 := 15
+entryDetailRecordValue7 := "0123456789ABCDE"
+;Individual or Receiving Company Name - Employee Name. (i.e.: "John Doe" 22chars, left-aligned, fill with spaces.)
+entryDetailRecordPosition8 := 55
+entryDetailRecordLength8 := 22
+entryDetailRecordValue8 := "John Doe"
+;Discretionary Data - Just leave this blank (2 spaces).
+entryDetailRecordPosition9 := 77
+entryDetailRecordLength9 := 2
+entryDetailRecordValue9 := "  "
+;Addenda Record Indicator - This indicates whether there's an addenda record (beginning with a 7) where internal company data might go. (Present: 1, Absent: 0)
+	;If we want to take advantage of extra info in bank statements, the Addenda Record is handy, so we'll take advantage of it.
+entryDetailRecordPosition10 := 79
+entryDetailRecordLength10 := 1
+entryDetailRecordValue10 := "1"
+;Trace Number - Usually this is stripped out and replaced by the bank. For Chase bank, they want the first eight digits of the funding account's routing number.
+	;After the routing number, they want the number of the record as it appears in sequence in the batch, starting with "0000001".
+	;Example for Chase: Routing = "122100024" then each transaction trace number would be "122100020000001", "122100020000002", "122100020000003", etc.
+entryDetailRecordPosition11 := 80
+entryDetailRecordLength11 := 15
+entryDetailRecordValue11 := SubStr(payrollRoutingNumber, 1, 8) . "0000001"
+
+;~ Addenda Record (The line beginning with '7'.)
+	;~ This should be where we can add notes, like when the pay period began/ended, and how many hours worked, etc.
+	;~ If we don't need the addenda, Chase lets us turn it off by setting the PPD Detail Record's Addenda Record Indicator to '0'.
+
+;Record Type Code -
+addendaRecordPosition1 := 1
+addendaRecordLength1 := 1
+addendaRecordValue1 := "7"
+;Addenda Type Code -
+addendaRecordPosition2 := 2
+addendaRecordLength2 := 2
+addendaRecordValue2 := "05"
+;Payment Related Information - The good stuff. Here we can make detailed notes, which should show up on employees' bank statements.
+	;80 char limit, followed by spaces. No special characters, except for ( ) ! # $ % & ' * + - . / : ; = ? @ [ ] ^ _ { | } .
+addendaRecordPosition3 := 4
+addendaRecordLength3 := 80
+addendaRecordValue3 := "PayPeriod From " . FormatTime(DateAdd(A_Now, -14, "days"), "MMM dd") . " - " . FormatTime(A_Now, "MMM dd")
+;Addenda Sequence Number -This number indicates the number of addenda records being sent with the associated Entry Detail Record.
+	;Since only one addenda sequence number Chase allows per six (6) record in the CCD and PPD application, this field will always be “0001”.
+addendaRecordPosition4 := 84
+addendaRecordLength4 := 4
+addendaRecordValue4 := "0001"
+;Entry Detail Sequence Number - This field contains the ascending sequence number of the related entry detail record’s trace number.
+	;This number is the same as the last 7 digits of the trace number of the related entry detail record. (This will be iterated by 1 for each entry in the CSV.)
+	;Basically, it identifies which entry in the current batch the addenda is for.
+addendaRecordPosition5 := 88
+addendaRecordLength5 := 7
+addendaRecordValue5 := "0000001"
+
+;~ Batch Control Record (The line beginning with '8')
 	;~ This record appears at the end of each batch. It holds totals for the batch.
 
-;~ File Control Record
+;Record Type Code - Identifies this line as a Batch Control Record, beginning with an '8'.
+batchControlRecordPosition1 := 1
+batchControlRecordLength1 := 1
+batchControlRecordValue1 := "8"
+;Service Class Code - Same as the Service Class Code in the Batch Header Record. Determines whether you're paying people (220 "Credit"), or charging them (225 "Debit").
+batchControlRecordPosition2 := 2
+batchControlRecordLength2 := 3
+batchControlRecordValue2 := "220"
+;Entry / Addenda Count - Just like it sounds like; it's a sum totalling the number of lines that begin with 5 or 7. (Entry Detail Records and Addenda Records)
+batchControlRecordPosition3 := 5
+batchControlRecordLength3 := 6
+batchControlRecordValue3 := "000001"
+;Entry Hash - Basically used as a digital sanity check. It's a sum of the Entry Detail Records' Receiving DFI IDs.
+	;Just adds up all the entries' routing numbers (only the first eight digits of each, though: field 3, positions 4-11).
+batchControlRecordPosition4 := 11
+batchControlRecordLength4 := 10
+batchControlRecordValue4 := "0000000001"
+;Total Debit Entry Dollar Amount - A sum totalling the whole amount withdrawn from accounts in the batch. Formatted as 00$$¢¢ (i.e.: "000000012345" would be $123.45).
+batchControlRecordPosition5 := 21
+batchControlRecordLength5 := 12
+batchControlRecordValue5 := "000000012345"
+;Total Credit Entry Dollar Amount - A sum totalling the whole amount deposited to accounts in the batch. Formatted as 00$$¢¢ (i.e.: "000000012345" would be $123.45).
+batchControlRecordPosition6 := 33
+batchControlRecordLength6 := 12
+batchControlRecordValue6 := "000000012345"
+;Company Identification - This *should* be the 10-character tax ID/EIN... Or is it some ACH ID? Chase bank is unclear on this. For now, we'll do zeros until we're sure.
+	;This must match whatever's in the Batch Header Record, field 5, position 41-50.
+batchControlRecordPosition7 := 45
+batchControlRecordLength7 := 10
+;~ batchControlRecordValue7 := payrollEIN
+batchControlRecordValue7 := "0000000000" ;If we can use our EIN, delete this line and use the one above.
+;Message Authentication Code - Chase leaves this blank. No idea what it's for. Just 19 spaces.
+batchControlRecordPosition8 := 55
+batchControlRecordLength8 := 19
+batchControlRecordValue8 := "                   "
+;Reserved - Yet another field that's always supposed to be blank. Just 6 spaces. *shrug*
+batchControlRecordPosition9 := 74
+batchControlRecordLength9 := 6
+batchControlRecordValue9 := "      "
+;Originating DFI Identification - This must be the same as in the Batch Header Record, field 12. First eight digits of funding bank's 9-digit routing number.
+batchControlRecordPosition10 := 80
+batchControlRecordLength10 := 8
+batchControlRecordValue10 := SubStr(payrollRoutingNumber, 1, 8)
+;Batch Number - This should be the same as in the Batch Header Record, field 13, position 88.
+batchControlRecordPosition11 := 88
+batchControlRecordLength11 := 7
+batchControlRecordValue11 := batchHeaderRecordValue13
+
+;~ File Control Record (The line beginning with '9')
 	;~ This record provides a final check on the submitted data. It contains block and batch counts and totals for each type of entry.
+
+;Record Type Code - Identifies this line as a File Control Record, beginning with a '9'.
+fileControlRecordPosition1 := 1
+fileControlRecordLength1 := 1
+fileControlRecordValue1 := "9"
+;Batch Count - Number of batches in the file. (If there's no upper limit hit, then this will only ever be "000001".
+;If we need to split the batch because of a limit, then this will be "000002".
+fileControlRecordPosition2 := 2
+fileControlRecordLength2 := 6
+fileControlRecordValue2 := "000001"
+;Block Count - Total number of blocks in file (records in file, divided by 10).
+;If not evently divisible by 10, additional lines of 94 '9's should be added at the end of the file, to make the file's lines total a number divisible by 10.
+fileControlRecordPosition3 := 8
+fileControlRecordLength3 := 6
+fileControlRecordValue3 := "000001"
+;Entry / Addenda Count - Total number of Entry Detail Records and Addenda Records in the file. (Basically a count of how many lines begin with a '6' or '7'. 8chars, leading zeros.)
+fileControlRecordPosition4 := 14
+fileControlRecordLength4 := 8
+fileControlRecordValue4 :="00000001"
+;Entry Hash - Sum of all the transit routing numbers from all Entry Detail Records.
+;(Basically add up all the first 8 digits of routing numbers in the lines beginning with '6', from positions 4-11.)
+;10 chars, leading zeros. Truncate to the last 10 characters if the sum has more than 10 characters.
+fileControlRecordPosition5 := 22
+fileControlRecordLength5 := 10
+fileControlRecordValue5 := "0000000001"
+;Total Debit Entry Dollar Amount In File - Grand total of how much money was withdrawn from all the entries' accounts. Formatted as 00$$¢¢ (i.e.: "000000012345" would be $123.45).
+fileControlRecordPosition6 := 32
+fileControlRecordLength6 := 12
+fileControlRecordValue6 := "000000012345"
+;Total Credit Entry Dollar Amount In File - Grand total of how much money was deposited into all the entries' accounts. Formatted as 00$$¢¢ (i.e.: "000000012345" would be $123.45).
+fileControlRecordPosition7 := 44
+fileControlRecordLength7 := 12
+fileControlRecordValue7 := "000000012345"
+;Reserved - Blank. Fill it with 39 blank spaces.
+fileControlRecordPosition8 := 56
+fileControlRecordLength8 := 39
+fileControlRecordValue8 := "                                       "
 
 /*
 	/=======================================================================\

@@ -17,6 +17,7 @@
 	|		[ ]	Function: Generate a Nacha-formatted array of lines from PayrollArray()
 	|			Of course, this should be done after the import of CSV is reviewed and confirmed.
 	|		[ ]	Function: Output Nacha-formatted .ach file(s) from the array of Nacha Lines.
+			[ ]	Function: Start building GUI for ...visual users.
 	|	TODO Features:
 	|		[ ]	Feature: (Required) Split Nacha files by an upper limit applied to the running total.
 	|			This can be done by returning an array of processed arrays from PayrollArray().
@@ -33,13 +34,21 @@
 	|		[ ] Add descriptive tooltips on the tray icon to explain its current state.
 	|		[ ] Add a brief splash screen on launch, so it's obvious when we launch it.
 	|		[ ]	Make some useful, human-readable documentation for any other mortal souls going through this in the future.
+	|	Debates/Ponderances:
+	|		[?]	Exactly how much do we want to balance between script data sanitization, and having the user preprocess the data?
+	|			For example, in a payroll spreadsheet, the employee name might be listed as "FirstName LastName" in a single column.
+	|			But for data purposes, and 1099 processing, it would be better to delineate name to two columns, like "LastName" and "FirstName".
+	|			Or even having a comma in the column so that there's some kind of indication which part is which, like "LastName, FirstName".
+	|			This kind of data handling might be better handled before even using this script. After all, "garbage in, garbage out."
+	|		[?]	Ancillary to above: Should we dynamically determine CSV field by header contents? Or enforce strict CSV format? Latter would be safer.
+	|		[?]	Would *.ini files really be the best way to store user-defined settings?
+	|			Some people might not be familiar with the format; maybe using a CSV exported from Excel would be better?
 	|	Queries:
 	|		[ ] When a deposit is made to an employee account, we HAVE to specify whether it's a checking or savings account.
 	|			This means it involves a bit of tedious work, gathering the type of each employee's account number, routing, and type.
-	|		[ ] Should we add handling for employee first/last names being entered as a single string, rather than separated?
-	|			(This is a nice idea, but this should be considered common-sense to have the surname/firstname as separate.)
 	|		[ ] Is there a way to easily determine in bulk what type of account each employee has (checking/savings)?
 	|			Please... for the love of all that's holy, PLEASE let this not necessitate several hundred phone calls and research by employees...
+	|			If there's no way to fetch the account types from bank(s), then the next best option is manual data entry from paper direct deposit forms.
 	\=======================================================================/
 */
 
@@ -88,9 +97,9 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "0.07"
+scriptVersion := "0.08"
 scriptAuthor := "TrevorLaneRay"
-HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6, 5.5]
+HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6, 6.6]
 ;Create a little tray icon info.
 NachaIconFile := "NachaIcon.ico"
 busyIconFile := "NachaIconYellow.ico"
@@ -111,9 +120,10 @@ if FileExist(NachaIconFile)
 */
 
 ;File/Folder Settings
-csvFileName := "SampleCSV.csv"
-NachaFileFolderName := "NachaFiles"
-nachaFileName := "NachaFile"
+csvFileName := "SampleCSV.csv" ;The default name of the file to import. We can change this later to a user-specified file.
+numberOfFieldsInCSV := 7 ;This should be how many fields, or "columns" are in the CSV. The amount paid should be the last column.
+NachaFileFolderName := "NachaFiles" ;Name for the folder in which to place finalized, validated Nacha files.
+nachaFileName := "NachaFile" ;Name of the Nacha file to save. (Multiple files can be differentiated by number, letter, or date, etc.)
 auditLogFileFolderName := "AuditLogs"
 auditLogFileName := "AuditLog"
 
@@ -282,22 +292,25 @@ entryDetailRecordValue3 := SubStr("REPLACEMEWITHEMPLOYEEROUTINGNUMBER", 1, 8)
 entryDetailRecordPosition4 := 12
 entryDetailRecordLength4 := 1
 entryDetailRecordValue4 := SubStr("REPLACEMEWITHEMPLOYEEROUTINGNUMBER", -1, 1)
-;DFI Account Number - Bank account number of the employee. This can apparently be alphanumeric, not just numbers.
+;DFI Account Number - Bank account number of the employee. This can apparently be alphanumeric at some banks, not just numbers. (Left-aligned, 17 chars, filled to the right with spaces.)
+;Also, we can apparently use . / () & ' - and spaces, but what kind of bank would do such silliness?
 entryDetailRecordPosition5 := 13
 entryDetailRecordLength5 := 17
-entryDetailRecordValue5 := "0123456789ABCDEFG"
+entryDetailRecordValue5 := "12345ABCDEF      "
 ;Dollar Amount - Formatted as 00$$¢¢ (i.e.: "0000012345" would be $123.45).
 entryDetailRecordPosition6 := 30
 entryDetailRecordLength6 := 10
-entryDetailRecordValue6 := "0000000000"
-;Individual Identification Number - Identifies the Reciver's ID in batch. Uppercase A-Z, or 0-9. (Mandatory for Chase. Could this be company internal employee number?)
+entryDetailRecordValue6 := "0000012345"
+;Individual Identification Number - Identifies the Receiver's ID in batch. Uppercase A-Z, or 0-9. (Mandatory for Chase. Could this be company internal employee number?)
+;For now, we'll assume the employee number is just a four-digit number.
 entryDetailRecordPosition7 := 40
 entryDetailRecordLength7 := 15
-entryDetailRecordValue7 := "0123456789ABCDE"
+entryDetailRecordValue7 := "0001           "
 ;Individual or Receiving Company Name - Employee Name. (i.e.: "John Doe" 22chars, left-aligned, fill with spaces.)
+;A-Z, a-z, 0-9, Special characters . / () & ' - and spaces allowed. No commas.
 entryDetailRecordPosition8 := 55
 entryDetailRecordLength8 := 22
-entryDetailRecordValue8 := "John Doe"
+entryDetailRecordValue8 := "John Doe              "
 ;Discretionary Data - Just leave this blank (2 spaces).
 entryDetailRecordPosition9 := 77
 entryDetailRecordLength9 := 2
@@ -509,7 +522,7 @@ OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output 
 		for entryField, entryData in EntryContents
 		{
 			;Append each field's contents to the output log, separated by tabs.
-			if A_Index != 5
+			if A_Index != numberOfFieldsInCSV
 			{
 				;Insert a tab if the field isn't the last in the row.
 				entryData .= A_Tab
@@ -517,7 +530,7 @@ OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output 
 			outputLogData .= entryData
 			;Add the entryAmount to a running total for a summary.
 			;Later, this running total will be used to determine if a Nacha file has to be split by an upper limit.
-			if A_Index = 5 && entryData != "Amount"
+			if A_Index = numberOfFieldsInCSV && entryData != "Amount"
 			{
 				runningTotal += entryData
 			}
@@ -559,6 +572,16 @@ OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output 
 	|	Functions here are under active development.
 	\=======================================================================/
 */
+
+NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
+	;Note: we shouldn't do any kind of data validation here. Just keep it to pure processing tasks.
+	return "Complete"
+}
+
+CleanCSV(*){ ;Preprocess the CSV file, and report to user if any fields are obviously malformed.
+	;Consider bank transaction limitations.
+	return "Herp derp."
+}
 
 Derp(*){
 	return "Herp derp."

@@ -6,8 +6,6 @@
 	|Project Notes
 	|	Current Task(s):
 	|		[ ]	Establish variables defining Nacha file format parameters.
-	|		[ ]	Do some light reading on the history of COBOL backend engineering for the bank systems that use Nacha. :)
-	|		[ ]	Make some useful documentation for any other mortal souls going through this in the future.
 	|	TODO Functions:
 	|		[X]	Function: Read CSV file into script cleanly.
 	|		[X]	Function: Output a tab-separated txt for preview.
@@ -31,6 +29,7 @@
 	|		[X] Add icons in the tray for visual status indication of script activity.
 	|		[ ] Add descriptive tooltips on the tray icon to explain its current state.
 	|		[ ] Add a brief splash screen on launch, so it's obvious when we launch it.
+	|		[ ]	Make some useful, human-readable documentation for any other mortal souls going through this in the future.
 	|	Queries:
 	|		[ ] When a deposit is made to an employee account, do we HAVE to specify if it's a checking/savings/credit?
 	|			One would think that the recipient account number would be implicitly one type or another...
@@ -84,14 +83,14 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "0.05"
+scriptVersion := "0.06"
 scriptAuthor := "TrevorLaneRay"
 HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6]
 ;Create a little tray icon info.
 NachaIconFile := "NachaIcon.ico"
-busyIconFile := "NachaBusyIcon.ico"
-errorIconFile := "NachaErrorIcon.ico"
-okIconFile := "NachaOKIcon.ico"
+busyIconFile := "NachaIconYellow.ico"
+errorIconFile := "NachaIconRed.ico"
+okIconFile := "NachaIconGreen.ico"
 A_IconTip := "NachaLibre v." . scriptVersion
 A_ScriptName := "NachaLibre"
 if FileExist(NachaIconFile)
@@ -102,6 +101,7 @@ if FileExist(NachaIconFile)
 	|User Settings
 	|	These settings are for user-specified parameters.
 	|	Adjust these to your specific use case.
+	|	Later, let's get these out of the script, and into a separate .ini file for customization after compilation.
 	\=======================================================================/
 */
 
@@ -243,11 +243,12 @@ batchHeaderRecordValue11 := "1"
 batchHeaderRecordPosition12 := 80
 batchHeaderRecordLength12 := 8
 batchHeaderRecordValue12 := payrollRoutingNumber
-;Batch Number - The heck is a batch? How many can fit in a batch? How much wood can a woodchuck chuck, Chuck? (7chars, leading zeros, iterating +1 for each batch.)
+;Batch Number - The heck is a batch? How many can fit in a batch? How many batches can a natcha batch, Stretch? (7chars, leading zeros, iterating +1 for each batch.)
+;Just guessing here, but I'm guessing each "batch" is a separate transaction for the company payroll. Doesn't seem to have an upper limit on number of items in a batch, or number of batches. 9,999,999?
+;Thus, if the bank has an upper limit on the amount of each "transaction," then we may need to iterate this.
 batchHeaderRecordPosition13 := 88
 batchHeaderRecordLength13 := 7
 batchHeaderRecordValue13 := 1
-
 
 ;~ PPD Detail Record
 	;~ This record contains the information needed to post a deposit to an account, such as the receiver's name, account number, and payment amount.

@@ -136,7 +136,7 @@ payrollCompanyName := "HURP DERP LLC" ;Name of your company. Needs to be upper c
 payrollRecipientCompanyName := "Hurp Derp LLC" ;Name of your company. (Same as above, but will be what appears in an employee's bank statement. Max 16 chars.)
 payrollRoutingNumber := "123456789" ;9-digit routing number of bank from which the payroll will be withdrawn. (Lead with zeros if less than 9 chars.)
 payrollAccountNumber := "987654321" ;Account number from which the payroll will be withdrawn.
-payrollEIN := "12-3456789" ;String to identify the business entity for tax purposes. (10 chars, leading zeros.)
+payrollEIN := "0123456789" ;String to identify the business entity for tax purposes. (10 chars, leading zeros... or does Chase want us to prefix with '1'?)
 
 /*
 	/=======================================================================\
@@ -245,7 +245,7 @@ batchHeaderRecordValue7 := "PAYROLL"
 	;For initial purposes here, we'll use the day after create the Nacha file.
 batchHeaderRecordPosition8 := 64
 batchHeaderRecordLength8 := 6
-batchHeaderRecordValue8 := FormatTime(DateAdd(A_Now, 1, "days") "MMM dd")
+batchHeaderRecordValue8 := FormatTime(DateAdd(A_Now, 1, "days"), "MMM dd")
 ;Effective Entry Date - MUST be later than the file creation date, according to Chase. We'll just add one day to today for use here? (6chars, yymmdd)
 batchHeaderRecordPosition9 := 70
 batchHeaderRecordLength9 := 6
@@ -464,7 +464,11 @@ F11::
 	PayrollArray := ReadCSVFile(csvFileName)
 	;Process the CSV into a simple preview for double-checking.
 	;This will output "true" if the preview is accepted by user, or "false" if rejected.
-	OutputPreviewFile(PayrollArray, auditLogFileFolderName, auditLogFileName)
+	if OutputPreviewFile(PayrollArray, auditLogFileFolderName, auditLogFileName)
+	{
+		NachaFileContents := NachaConstructor(PayrollArray)
+		OutputNachaFile(NachaFileContents)
+	}
 	return
 }
 
@@ -573,12 +577,56 @@ OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output 
 	\=======================================================================/
 */
 
-NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
+NachaConstructor(PayrollData){ ;Build the Nacha file line by line, field by field.
 	;Note: we shouldn't do any kind of data validation here. Just keep it to pure processing tasks.
-	return "Complete"
+	;DevNote: Yes, this could be streamlined to a single line, but it's neater to read/understand like this for now.
+	nachaData :=  "" ;Will contain the raw text data of the Nacha file.
+	nachaLine := "" ;Will contain the current line of the Nacha file we're working on.
+
+	;~ Create File Header Record, followed by a newline character.
+	nachaLine .= fileHeaderRecordValue1 ;Record Type Code
+	nachaLine .= fileHeaderRecordValue2 ;Priority Code
+	nachaLine .= Format("{:010}", payrollRoutingNumber) ;Immediate Destination
+	nachaLine .= Format("{:010}", payrollEIN) ;Immediate Origin
+	nachaLine .= FormatTime(A_Now, "yyMMdd") ;File Creation Date
+	nachaLine .= FormatTime(A_Now, "HHmm") ;File Creation Time
+	nachaLine .= "A" ;File ID Modifier
+	nachaLine .= fileHeaderRecordValue8 ;Record Size
+	nachaLine .= fileHeaderRecordValue9 ;Blocking Factor
+	nachaLine .= fileHeaderRecordValue10 ;Format Code
+	nachaLine .= Format("{:-23}", payrollBankName) ;Immediate Destination Name
+	nachaLine .=Format("{:-23}", payrollCompanyName) ;Immediate Origin Name
+	nachaLine .= fileHeaderRecordValue13 . "`n" ;Reference Code (and a newline to end the File Header Record).
+
+	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+
+	;Create Batch Header Record, followed by a newline character.
+	nachaLine .= batchHeaderRecordValue1 ;Record Type Code
+	nachaLine .= batchHeaderRecordValue2 ;Service Class Code
+	nachaLine .= batchHeaderRecordValue3 ;Company Name
+	nachaLine .= batchHeaderRecordValue4 ;Company Discretionary Data
+	nachaLine .= batchHeaderRecordValue5 ;Company Identification
+	nachaLine .= batchHeaderRecordValue6 ;Standard Entry Class Code
+	nachaLine .= batchHeaderRecordValue7 ;Company Entry Description
+	nachaLine .= batchHeaderRecordValue8 ;Company Descriptive Date
+	nachaLine .= batchHeaderRecordValue9 ;Effective Entry Date
+	nachaLine .= batchHeaderRecordValue10 ;Settlement Date
+	nachaLine .= batchHeaderRecordValue11 ;Originator Status Code
+	nachaLine .= batchHeaderRecordValue12 ;Originating DFI Identification
+	nachaLine .= batchHeaderRecordValue13 . "`n" ;Batch Number (and a newline to end the Batch Header Record).
+
+	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+
+	return ProcessedNachaData
 }
 
-CleanCSV(*){ ;Preprocess the CSV file, and report to user if any fields are obviously malformed.
+OutputNachaFile(NachaContent){ ;Take the output of NachaConstructor, and output it to a file.
+	return true
+}
+
+DoubleCheckNachaFormat(*){ ;Preprocess the generated file contents, and report to user if any fields are obviously malformed.
 	;Consider bank transaction limitations.
 	return "Herp derp."
 }

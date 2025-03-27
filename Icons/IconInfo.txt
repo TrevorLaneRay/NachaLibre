@@ -1,0 +1,1 @@
+Just some icons to use for tray indication of script status.

@@ -3,52 +3,6 @@
 	|NachaLibre
 	|	A straightforward generator to take an Excel-exported CSV file, and turn it into a Nacha file for banks.
 	|	Intended to simplify Excel-based payroll tasks.
-	|Project Notes
-	|	Current Task(s):
-	|		[ ]	Nacha file construction functionality.
-	|			The real work begins here... a function to properly concatenate fields into 94-character lines.
-	|			Will also need on-the-fly sanity checks to GUARANTEE data is PERFECTLY error-free.
-	|			Working in the real world, where real damage can be done if not careful. Have to get this airtight.
-	|	TODO Functions:
-	|		[X]	Function: Read CSV file into script cleanly.
-	|		[X]	Function: Output a tab-separated txt for preview.
-	|		[ ]	Function: Import new instances of Employee/Accounts into separate database.
-	|			[ ]	SubFunction: Run sanity checks against this database to verify any changes since the last time?
-	|		[ ]	Function: Generate a Nacha-formatted array of lines from PayrollArray()
-	|			Of course, this should be done after the import of CSV is reviewed and confirmed.
-	|		[ ]	Function: Output Nacha-formatted .ach file(s) from the array of Nacha Lines.
-			[ ]	Function: Start building GUI for ...visual users.
-	|	TODO Features:
-	|		[ ]	Feature: (Required) Split Nacha files by an upper limit applied to the running total.
-	|			This can be done by returning an array of processed arrays from PayrollArray().
-	|			Each array would have <= maxPayrollAmount. (For now, we'll call this $500K.)
-	|			Alternatively, this can be done later during the Nacha file generation stage.
-	|			Before an entry is added, its amount can be checked.
-	|			If the amount is above maxPayrollAmount, we can finalize that Nacha file, and start with a new one.
-	|		[ ]	Feature: Load user/payroll/script parameters from separate .ini or .txt file.
-	|			This would make it much easier to adjust values after compilation. No hard-coded values.
-	|		[ ] Feature: Separate Nacha file validator to import and verify .ach files on-demand.
-	|			The ability to summarize an existing Nacha file would be a godsend. I want this. :D
-	|	TODO Minutae/QoL:
-	|		[X] Add icons in the tray for visual status indication of script activity.
-	|		[ ] Add descriptive tooltips on the tray icon to explain its current state.
-	|		[ ] Add a brief splash screen on launch, so it's obvious when we launch it.
-	|		[ ]	Make some useful, human-readable documentation for any other mortal souls going through this in the future.
-	|	Debates/Ponderances:
-	|		[?]	Exactly how much do we want to balance between script data sanitization, and having the user preprocess the data?
-	|			For example, in a payroll spreadsheet, the employee name might be listed as "FirstName LastName" in a single column.
-	|			But for data purposes, and 1099 processing, it would be better to delineate name to two columns, like "LastName" and "FirstName".
-	|			Or even having a comma in the column so that there's some kind of indication which part is which, like "LastName, FirstName".
-	|			This kind of data handling might be better handled before even using this script. After all, "garbage in, garbage out."
-	|		[?]	Ancillary to above: Should we dynamically determine CSV field by header contents? Or enforce strict CSV format? Latter would be safer.
-	|		[?]	Would *.ini files really be the best way to store user-defined settings?
-	|			Some people might not be familiar with the format; maybe using a CSV exported from Excel would be better?
-	|	Queries:
-	|		[ ] When a deposit is made to an employee account, we HAVE to specify whether it's a checking or savings account.
-	|			This means it involves a bit of tedious work, gathering the type of each employee's account number, routing, and type.
-	|		[ ] Is there a way to easily determine in bulk what type of account each employee has (checking/savings)?
-	|			Please... for the love of all that's holy, PLEASE let this not necessitate several hundred phone calls and research by employees...
-	|			If there's no way to fetch the account types from bank(s), then the next best option is manual data entry from paper direct deposit forms.
 	\=======================================================================/
 */
 
@@ -57,7 +11,6 @@
 	|Compiler Directives
 	|	These commented lines are for the compiler.
 	|	If turning the script into an executable, this helps.
-	|	TODO: Windows Defender is paranoid. Find some way to un-rustle its jimmies.
 	\=======================================================================/
 */
 
@@ -97,14 +50,13 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "0.08"
+scriptVersion := "0.15"
 scriptAuthor := "TrevorLaneRay"
-HoursHavingFunOnThis := [6.1, 2.25, 4.15, 3.8, 2.6, 6.6]
 ;Create a little tray icon info.
-NachaIconFile := "NachaIcon.ico"
-busyIconFile := "NachaIconYellow.ico"
-errorIconFile := "NachaIconRed.ico"
-okIconFile := "NachaIconGreen.ico"
+NachaIconFile := "Icons\NachaIcon.ico"
+busyIconFile := "Icons\NachaIconYellow.ico"
+errorIconFile := "Icons\NachaIconRed.ico"
+okIconFile := "Icons\NachaIconGreen.ico"
 A_IconTip := "NachaLibre v." . scriptVersion
 A_ScriptName := "NachaLibre"
 if FileExist(NachaIconFile)
@@ -120,10 +72,10 @@ if FileExist(NachaIconFile)
 */
 
 ;File/Folder Settings
-csvFileName := "SampleCSV.csv" ;The default name of the file to import. We can change this later to a user-specified file.
+csvFileName := "SourceCSVs\TrialSheetOutput.csv" ;The default name of the file to import. We can change this later to a user-specified file.
 numberOfFieldsInCSV := 7 ;This should be how many fields, or "columns" are in the CSV. The amount paid should be the last column.
-NachaFileFolderName := "NachaFiles" ;Name for the folder in which to place finalized, validated Nacha files.
-nachaFileName := "NachaFile" ;Name of the Nacha file to save. (Multiple files can be differentiated by number, letter, or date, etc.)
+NachaFileFolderName := "NachaOutput" ;Name for the folder in which to place finalized, validated Nacha files.
+nachaFileName := "NachaFile.ach" ;Name of the Nacha file to save. (Multiple files can be differentiated by number, letter, or date, etc.)
 auditLogFileFolderName := "AuditLogs"
 auditLogFileName := "AuditLog"
 
@@ -131,12 +83,14 @@ auditLogFileName := "AuditLog"
 maxPayrollAmount := 5000000 ;Upper limit of dollars at which to split Nacha submissions (dependent on bank?).
 payPeriodBegin := DateAdd(A_Now, -14, "days") ;Date that the pay period began. (This should be input by the user manually.)
 payPeriodEnd := A_Now ;Date that the pay period ended. (This should be input by the user manually.)
+payDay := FormatTime(DateAdd(A_Now, 1, "days"), "MMM dd") ;Descriptive day that payday is (Assuming this is tomorrow.
+transactionDay := FormatTime(DateAdd(A_Now, 1, "days"), "yyMMdd") ;Day that the bank transaction should occur (Assuming this is tomorrow.)
 payrollBankName := "JPMORGAN CHASE" ;Name of the bank the payroll will be sent from.
-payrollCompanyName := "HURP DERP LLC" ;Name of your company. Needs to be upper case. A-Z, space, and periods, max 23 chars.
-payrollRecipientCompanyName := "Hurp Derp LLC" ;Name of your company. (Same as above, but will be what appears in an employee's bank statement. Max 16 chars.)
+payrollCompanyName := "HERP DERP LLC" ;Name of your company. Needs to be upper case. A-Z, space, and periods, max 23 chars.
+payrollRecipientCompanyName := "Herp Derp LLC" ;Name of your company. (Same as above, but will be what appears in an employee's bank statement. Max 16 chars.)
 payrollRoutingNumber := "123456789" ;9-digit routing number of bank from which the payroll will be withdrawn. (Lead with zeros if less than 9 chars.)
-payrollAccountNumber := "987654321" ;Account number from which the payroll will be withdrawn.
-payrollEIN := "0123456789" ;String to identify the business entity for tax purposes. (10 chars, leading zeros... or does Chase want us to prefix with '1'?)
+payrollAccountNumber := "123456789" ;Account number from which the payroll will be withdrawn.
+payrollEIN := "0000000000" ;String to identify the business entity for tax purposes. (Chase specifications say to put zeros??)
 
 /*
 	/=======================================================================\
@@ -184,7 +138,7 @@ fileHeaderRecordValue7 := ["A","B","C","D","E","F","G","H","I","J","K","L","M","
 ;Record Size - Value is "094" - Number of bytes per record (e.g.: number of characters on each line). (Why need this tho? It's understood that 94chars is the file format... duh.)
 fileHeaderRecordPosition8 := 35
 fileHeaderRecordLength8 := 3
-fileHeaderRecordValue8 := " 94"
+fileHeaderRecordValue8 := "094"
 ;Blocking Factor - Value is "10". (Duh. It's explicitly part of the Nacha specifications. Why do we even need this in the file?)
 fileHeaderRecordPosition9 := 38
 fileHeaderRecordLength9 := 2
@@ -316,10 +270,10 @@ entryDetailRecordPosition9 := 77
 entryDetailRecordLength9 := 2
 entryDetailRecordValue9 := "  "
 ;Addenda Record Indicator - This indicates whether there's an addenda record (beginning with a 7) where internal company data might go. (Present: 1, Absent: 0)
-	;If we want to take advantage of extra info in bank statements, the Addenda Record is handy, so we'll take advantage of it.
+	;If we want to take advantage of extra info in bank statements, the Addenda Record is handy, so we'll take advantage of it when we're comfortable. For now, leave it off.
 entryDetailRecordPosition10 := 79
 entryDetailRecordLength10 := 1
-entryDetailRecordValue10 := "1"
+entryDetailRecordValue10 := "0"
 ;Trace Number - Usually this is stripped out and replaced by the bank. For Chase bank, they want the first eight digits of the funding account's routing number.
 	;After the routing number, they want the number of the record as it appears in sequence in the batch, starting with "0000001".
 	;Example for Chase: Routing = "122100024" then each transaction trace number would be "122100020000001", "122100020000002", "122100020000003", etc.
@@ -461,14 +415,10 @@ Pause::Pause
 F11::
 {
 	;Read the CSV file into the script.
-	PayrollArray := ReadCSVFile(csvFileName)
-	;Process the CSV into a simple preview for double-checking.
-	;This will output "true" if the preview is accepted by user, or "false" if rejected.
-	if OutputPreviewFile(PayrollArray, auditLogFileFolderName, auditLogFileName)
-	{
-		NachaFileContents := NachaConstructor(PayrollArray)
-		OutputNachaFile(NachaFileContents)
-	}
+	ReadCSVFile(csvFileName)
+
+	;Output the processed CSV data into Nacha format.
+	NachaConstructor()
 	return
 }
 
@@ -485,30 +435,46 @@ ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by f
 	TraySetIcon busyIconFile
 	;Load CSV file into an variable.
 	csvFile := FileRead(fileNameToRead)
-	;Create a blank array to use for rows.
-	CSVArray := []
+	global csvLineCount := 0
+
+	;Some blank arrays for when we read the CSV, later to be used for Entry Record generation.
+	;These should be global arrays, so that NachaConstructor() can use them later.
+	global CSVField1Array := []
+	global CSVField2Array := []
+	global CSVField3Array := []
+	global CSVField4Array := []
+	global CSVField5Array := []
+	global CSVField6Array := []
+	global CSVField7Array := []
+
 	;We now go through the CSV, row by row.
 	Loop Parse csvFile, "`n", "`r"
 	{
-		;Create a blank array to hold the contents of each column in the current row.
-		RowContents := []
+		;Skip the first line in the CSV, as it only contains headers.
+		;Also, if there's a blank line at the end of the CSV, skip that too.
+		if A_Index = 1 || A_LoopField = ""{
+			continue
+		}
+		csvLineCount += 1
 		;We now go through each column in the row.
+		;We add each of the current row's column's field to that field's array.
 		Loop parse, A_LoopField, ","
 		{
-			;Add the column content into the array of column items.
-			;We'll trim off any unnecessary characters from the beginning or end of the column's data.
-			;This is useful since dollar amounts, when exported as CSV from Excel, aren't purely numeric values, but characters like '$'.
-			;Perhaps later we can also check for numbers in the employee name field, which shouldn't be present.
-			RowContents.Push(Trim(A_LoopField,"$ `r`n"))
+			CSVField%A_Index%Array.Push(Trim(A_LoopField,"$ `r`n"))
 		}
-		;Add that row of column contents onto the array of rows.
-		CSVArray.Push(RowContents)
 	}
-	;Report how many lines were read from the CSV.
-	MsgBox(CSVArray.Length . " Lines Read.", "CSV reading loop completed.", 64)
+	exportTestData := ""
+	Loop csvLineCount {
+		exportTestData .= CSVField1Array[A_Index]
+		exportTestData .= CSVField2Array[A_Index]
+		exportTestData .= CSVField3Array[A_Index]
+		exportTestData .= CSVField4Array[A_Index]
+		exportTestData .= CSVField5Array[A_Index]
+		exportTestData .= CSVField6Array[A_Index]
+		exportTestData .= CSVField7Array[A_Index]
+	}
 	TraySetIcon NachaIconFile
-	;Here we should expect to somehow return the final array of parsed CSV data, as an array of rows, each row an array of column items.
-	return CSVArray
+	return
 }
 
 OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output summary of transactions, useful for double-checking the CSV.
@@ -577,40 +543,45 @@ OutputPreviewFile(ArrayOfEntriesToLog, logLocation, outputFile) ;Test to output 
 	\=======================================================================/
 */
 
-NachaConstructor(PayrollData){ ;Build the Nacha file line by line, field by field.
-	;Note: we shouldn't do any kind of data validation here. Just keep it to pure processing tasks.
-	;DevNote: Yes, this could be streamlined to a single line, but it's neater to read/understand like this for now.
-	nachaData :=  "" ;Will contain the raw text data of the Nacha file.
+NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
+	nachaData :=  "" ;Will contain the raw text data of the entire Nacha file.
 	nachaLine := "" ;Will contain the current line of the Nacha file we're working on.
+	nachaLineCounter := 0 ;Will contain the total number of lines that should be in the file. (Used for padding and blocks.)
+	totalEntryCounter := 0 ;Will contain the total number of entry and addenda records.
+	batchEntryCounter := 0 ;Will contain the current counter of entries in the current batch.
+	entryHash := 0 ;Will contain a sum of all entries' Recieving DFI IDs.
+	totalCreditAmount := 0
 
-	;~ Create File Header Record, followed by a newline character.
-	nachaLine .= fileHeaderRecordValue1 ;Record Type Code
-	nachaLine .= fileHeaderRecordValue2 ;Priority Code
+	;/===================File Header Record===================\
+	nachaLine .= "1" ;Record Type Code
+	nachaLine .= "01" ;Priority Code
 	nachaLine .= Format("{:010}", payrollRoutingNumber) ;Immediate Destination
 	nachaLine .= Format("{:010}", payrollEIN) ;Immediate Origin
 	nachaLine .= FormatTime(A_Now, "yyMMdd") ;File Creation Date
 	nachaLine .= FormatTime(A_Now, "HHmm") ;File Creation Time
-	nachaLine .= "A" ;File ID Modifier
-	nachaLine .= fileHeaderRecordValue8 ;Record Size
-	nachaLine .= fileHeaderRecordValue9 ;Blocking Factor
-	nachaLine .= fileHeaderRecordValue10 ;Format Code
+	nachaLine .= "A" ;File ID Modifier (Implement iteration for multiple files later on.)
+	nachaLine .= "094" ;Record Size
+	nachaLine .= "10" ;Blocking Factor
+	nachaLine .= "1" ;Format Code
 	nachaLine .= Format("{:-23}", payrollBankName) ;Immediate Destination Name
-	nachaLine .=Format("{:-23}", payrollCompanyName) ;Immediate Origin Name
-	nachaLine .= fileHeaderRecordValue13 . "`n" ;Reference Code (and a newline to end the File Header Record).
+	nachaLine .= Format("{:-23}", payrollCompanyName) ;Immediate Origin Name
+	nachaLine .= "        " . "`n" ;Reference Code (and a newline to end the File Header Record).
 
 	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
 	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	nachaLineCounter += 1
+	;\========================================================/
 
-	;Create Batch Header Record, followed by a newline character.
+	;/================Batch Header Record================\
 	nachaLine .= batchHeaderRecordValue1 ;Record Type Code
 	nachaLine .= batchHeaderRecordValue2 ;Service Class Code
-	nachaLine .= batchHeaderRecordValue3 ;Company Name
-	nachaLine .= batchHeaderRecordValue4 ;Company Discretionary Data
+	nachaLine .= SubStr(Format("{:-16}", payrollCompanyName), 1, 16) ;Company Name (TODO: Trim company name to 16chars *before* padding, so that it doesn't overflow if longer.)
+	nachaLine .= Format("{:020}", payrollAccountNumber) ;Company Discretionary Data
 	nachaLine .= batchHeaderRecordValue5 ;Company Identification
 	nachaLine .= batchHeaderRecordValue6 ;Standard Entry Class Code
-	nachaLine .= batchHeaderRecordValue7 ;Company Entry Description
-	nachaLine .= batchHeaderRecordValue8 ;Company Descriptive Date
-	nachaLine .= batchHeaderRecordValue9 ;Effective Entry Date
+	nachaLine .= Format("{:-10}", batchHeaderRecordValue7) ;Company Entry Description
+	nachaLine .= payDay ;Company Descriptive Date (Payday)
+	nachaLine .= transactionDay ;Effective Entry Date (Date the transaction occurs on)
 	nachaLine .= batchHeaderRecordValue10 ;Settlement Date
 	nachaLine .= batchHeaderRecordValue11 ;Originator Status Code
 	nachaLine .= batchHeaderRecordValue12 ;Originating DFI Identification
@@ -618,19 +589,116 @@ NachaConstructor(PayrollData){ ;Build the Nacha file line by line, field by fiel
 
 	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
 	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	nachaLineCounter += 1
+	;\========================================================/
 
-	return ProcessedNachaData
+	;/================Entry Detail Records================\
+	;Let's go through the array of payroll entries passed to this function.
+	Loop csvLineCount {
+		totalEntryCounter += 1
+		batchEntryCounter += 1
+
+		;Take each field of the current entry, format it appropriately, and tack it all onto the current PPD Detail Record line.
+		ppdField1Data := "6"
+		if CSVField4Array[A_Index] = "Checking" {
+			ppdField2Data := "22"
+		} else if CSVField4Array[A_Index] = "Savings" {
+			ppdField2Data := "32" ;Employee Bank Account Type
+		}
+		ppdField3Data := SubStr(CSVField6Array[A_Index], 1, 8) ;First eight digits of Employee Routing Number
+		entryHash += ppdField3Data
+		ppdField4Data := SubStr(CSVField6Array[A_Index], -1, 1) ;Last digit of Employee Routing Number
+		ppdField5Data := Format("{:-17}", Trim(CSVField5Array[A_Index], " ")) ;Employee Account Number
+		ppdField6Data := Format("{:010}", StrReplace(CSVField7Array[A_Index], ".")) ;Dollar amount, formatted as $$$$$$$$¢¢
+		totalCreditAmount += CSVField7Array[A_Index] ;Total dollar amount thus far.
+		ppdField7Data := Format("{:-15}", Trim(CSVField1Array[A_Index], " ")) ;Individual Identification Number
+		ppdField8Data := Format("{:-22}", Trim(CSVField2Array[A_Index] . " " CSVField3Array[A_Index], " ")) ;Employee Name
+		ppdField9Data := Format("{:-2}", "") ;Discretionary Data
+		ppdField10Data := "0" ;Addenda Record Indicator (Add later for additional pay period info / hours worked in employee bank statement.)
+		ppdField11Data := SubStr(payrollRoutingNumber, 1, 8) . Format("{:07}", batchEntryCounter) ;Trace Number
+
+		nachaLine := ppdField1Data . ppdField2Data . ppdField3Data . ppdField4Data . ppdField5Data . ppdField6Data . ppdField7Data . ppdField8Data . ppdField9Data . ppdField10Data . ppdField11Data . "`n"
+
+		nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+		nachaLineCounter += 1
+		nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	}
+
+	;\========================================================/
+
+	;/================Batch Control Record================\
+	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	nachaLine .= "8" ;Record Type Code
+	nachaLine .= "220" ;Service Class Code
+	nachaLine .= Format("{:06}", csvLineCount) ;Entry/Addenda Count
+	nachaLine .= SubStr(Format("{:010}", entryHash), -10, 10) ;Entry Hash
+	nachaLine .= Format("{:012}", 0) ;Total Debit Amount
+	nachaLine .= Format("{:012}", StrReplace(Round(totalCreditAmount, 2), ".")) ;Total Credit Amount
+	nachaLine .= batchHeaderRecordValue5 ;Company Identification
+	nachaLine .= batchControlRecordValue8 ;Message Authentication Code
+	nachaLine .= batchControlRecordValue9 ;Reserved
+	nachaLine .= SubStr(Format("{:08}", batchControlRecordValue10), 1, 8) ;Originating DFI Identification
+	nachaLine .= batchControlRecordValue11 . "`n" ;Batch Number (and a newline to end the current Entry Record.)
+
+	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+	nachaLineCounter += 1
+	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	;\========================================================/
+
+	;/================File Control Record================\
+	Loop Parse nachaData, "`n", "`r"
+	{
+		;Tally up total number of entry lines.
+		nachaFileLines := A_Index
+	}
+	;Tally up how many blocks (total lines, divided by 10) are in the file.
+	;Note the +1 here is to account for this File Control Record line.
+	;Essentially: if the number of lines is not divisible evenly by 10, add one block to account for the remainder.
+	Mod(nachaFileLines + 1, 10) = 0 ? nachaFileBlockCount := ((nachaFileLines + 1) / 10) : nachaFileBlockCount := Round((nachaFileLines + 1) / 10) + 1
+	nachaLine .= fileControlRecordValue1 ;Record Type Code
+	nachaLine .= Format("{:06}", 1) ;Batch Count
+	nachaLine .= Format("{:06}", nachaFileBlockCount) ;Block Count
+	nachaLine .= Format("{:08}", csvLineCount) ;Entry/Addenda Count
+	nachaLine .= SubStr(Format("{:010}", entryHash), -10, 10) ;Entry Hash
+	nachaLine .= Format("{:012}", 0) ;Total Debit Amount
+	nachaLine .= Format("{:012}", StrReplace(Round(totalCreditAmount, 2), ".")) ;Total Credit Amount
+	nachaLine .= Format("{:-39}", "") ;Reserved
+
+	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+	nachaLineCounter += 1
+	nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
+	;\========================================================/
+
+	;/=========================Padding========================\
+	Loop Parse nachaData, "`n", "`r"
+	{
+		;Tally up total number of lines in the current nachaData.
+		nachaFileLines := A_Index
+	}
+	if (Mod(nachaFileLines, 10)) {
+		;If the nachaData is not evenly divisible by 10...
+		Loop 10 - Mod(nachaFileLines, 10) {
+			;Add lines of 9's to pad the file so the number of lines in the file is evenly divisible by 10.
+			nachaLine .= "`n" . "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+		}
+	}
+	nachaData .= nachaLine ;Append the current line's contents to the nachaData.
+	;\========================================================/
+
+	A_Clipboard := nachaData
+	dateStamp := A_YYYY . A_MM . A_DD . A_Hour . A_Min . A_Sec
+	FileAppend(nachaData,NachaFileFolderName . "\" . dateStamp . NachaFileName)
+	TraySetIcon okIconFile
+	MsgBox(totalEntryCounter . " entries processed.`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nNacha data has been copied to the clipboard.`nNacha file has also been saved to output folder.","Review Nacha Contents","Iconi")
+	TraySetIcon NachaIconFile
+	return
 }
 
 OutputNachaFile(NachaContent){ ;Take the output of NachaConstructor, and output it to a file.
 	return true
 }
 
-DoubleCheckNachaFormat(*){ ;Preprocess the generated file contents, and report to user if any fields are obviously malformed.
+ValidateNachaFormat(*){ ;Preprocess the generated file contents, and report to user if any fields are obviously malformed.
 	;Consider bank transaction limitations.
-	return "Herp derp."
-}
-
-Derp(*){
 	return "Herp derp."
 }

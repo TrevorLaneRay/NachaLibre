@@ -4,7 +4,7 @@
 - Initial commit of first working version.
 - Added this changelog.
 - Added ReadMe.
-- Decided on using The Unlicense for licensing.
+- Decided on using CC0 1.0 Universal for licensing.
 - Started using VSCode for development, instead of SciTE4AHK.
 - Added placeholder icons for display in tray. (Will change later.)
 - Split most hard-coded settings to separate .ini file (useful for compiled versions).

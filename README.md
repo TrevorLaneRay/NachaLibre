@@ -63,7 +63,6 @@ Needed some way to push payments to many employees in bulk.
 ...This is the result.
 
 [![NachaLibre Screen Shot][product-screenshot]](NachaOutput/20260212000934NachaFile.ach)
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 ### Tools used during development
@@ -72,7 +71,6 @@ Needed some way to push payments to many employees in bulk.
 * [Microsoft Excel](https://excel.cloud.microsoft/)
 * [Notepad++](https://notepad-plus-plus.org/)
 * No AI 😉
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- GETTING STARTED -->
@@ -118,8 +116,6 @@ If you've installed AutoHotkey v2.0, it comes with Ahk2Exe, which can compile yo
 4. Download the git repo to somewhere easy to use. (Your desktop maybe?)
 5. Modify the settings .ini file to specify your source CSV, bank info, and payday / transaction date offsets.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 <!-- USAGE CLARIFICATION -->
 ## Usage
@@ -135,19 +131,16 @@ If you've installed AutoHotkey v2.0, it comes with Ahk2Exe, which can compile yo
 
 _For some fun reading, please refer to the [Documentation](Documentation)._
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 <!-- ROADMAP -->
 ## Roadmap
+- [⏳] Figure out how signing an executable works, to stop Windows' SAC from freaking out.
 - [⏳] Automatically split .ach if it exceeds bank's daily limit.
 - [⏳] Replace hotkey triggers with GUI buttons.
 - [⏳] Add GUI for changing settings like file/date/bank info.
     - [🤔] Figure out some way to identify and warn about bank holidays.
 
 See the [open issues](https://github.com/TrevorLaneRay/NachaLibre/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- CONTRIBUTING -->
@@ -163,8 +156,6 @@ You can also simply open an issue with the tag "enhancement".
 4. Push to the Branch (`git push origin feature/CheeseDip`)
 5. Open a Pull Request
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ### Top contributors:
 
 <a href="https://github.com/TrevorLaneRay/NachaLibre/graphs/contributors">
@@ -176,16 +167,12 @@ You can also simply open an issue with the tag "enhancement".
 ## License
 Distributed under CC0 1.0 Universal. See [LICENSE.txt](LICENSE.txt) for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 <!-- CONTACT -->
 ## Contact
 Trevor Ray - [@TrevorLaneRay](https://x.com/TrevorLaneRay) - trevorlaneray@gmail.com
 
 Project Link: [https://github.com/TrevorLaneRay/NachaLibre](https://github.com/TrevorLaneRay/NachaLibre)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- ACKNOWLEDGMENTS -->

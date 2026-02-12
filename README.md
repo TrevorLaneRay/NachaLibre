@@ -8,7 +8,6 @@
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
 
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -28,7 +27,6 @@
     <a href="https://github.com/TrevorLaneRay/NachaLibre/issues/new?labels=enhancement&template=feature-request---.md">Request Feature</a>
   </p>
 </div>
-
 
 
 <!-- TABLE OF CONTENTS -->
@@ -58,7 +56,6 @@
 </details>
 
 
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 Lots of people to pay, and repeatedly spending time on it was a pain.
@@ -69,9 +66,8 @@ Needed some way to push payments to many employees in bulk.
 
 ...This is the result.
 
-[![NachoLibre Screen Shot][product-screenshot]](https://example.com)
+[![NachaLibre Screen Shot][product-screenshot]](https://example.com)
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 ### Tools used during development
@@ -81,7 +77,6 @@ Needed some way to push payments to many employees in bulk.
 * Notepad++
 * No AI 😉
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- GETTING STARTED -->
@@ -114,7 +109,6 @@ To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, M
   ```
 
 ### Installation
-
 1. Take a deep breath. Get relaxed.
 2. Download and install AHK.
 3. Set your editor to be the default for .ahk source files.
@@ -122,7 +116,6 @@ To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, M
 5. Modify the settings .ini file to specify your source CSV, bank info, and payday / transaction date offsets.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- USAGE CLARIFICATION -->
@@ -140,6 +133,7 @@ _For some fun reading, please refer to the [Documentation](https://example.com).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+
 <!-- ROADMAP -->
 ## Roadmap
 - [⏳] Automatically split .ach if it exceeds bank's daily limit.
@@ -152,10 +146,8 @@ See the [open issues](https://github.com/TrevorLaneRay/NachaLibre/issues) for a 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
 <!-- CONTRIBUTING -->
 ## Contributing
-
 Contributions of ideas would be **greatly appreciated**.
 
 I'm just doing this as a side project, so if you want to reproduce this as your own, I've licensed it so you can do so without worries. 😘
@@ -179,7 +171,6 @@ If you've got a suggestion that would make this better, please fork the repo and
 
 <!-- LICENSE -->
 ## License
-
 Distributed under CC0 1.0 Universal. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -187,7 +178,6 @@ Distributed under CC0 1.0 Universal. See `LICENSE.txt` for more information.
 
 <!-- CONTACT -->
 ## Contact
-
 Trevor Ray - [@TrevorLaneRay](https://x.com/TrevorLaneRay) - trevorlaneray@gmail.com
 
 Project Link: [https://github.com/TrevorLaneRay/NachaLibre](https://github.com/TrevorLaneRay/NachaLibre)
@@ -201,6 +191,7 @@ Project Link: [https://github.com/TrevorLaneRay/NachaLibre](https://github.com/T
 * [Treasury Software](https://www.treasurysoftware.com/) - The inspiration for this project.
 * [Intuit Quickbooks](https://quickbooks.intuit.com/ca/pricing/) - The motivation to avoid proprietary software and predatory vendor lock-in.
 * [GroggyOtter](https://github.com/GroggyOtter/ahkv2_definition_rewrite) - Made my life so much better with AHK integration for VSCode.
+* [othneildrew](https://github.com/othneildrew/Best-README-Template) - Definitely made creating this ReadMe easier.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -7,7 +7,6 @@
 [![License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -58,34 +57,38 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-Lots of people to pay, and repeatedly spending time on it was a pain.
-
-Had a big spreadsheet of people, their bank accounts, and amounts to pay.
-
-Needed some way to push payments to many employees in bulk.
-
+Lots of people to pay, and repeatedly spending time on it was a pain.  
+Had a big spreadsheet of people, their bank accounts, and amounts to pay.  
+Needed some way to push payments to many employees in bulk.  
 ...This is the result.
 
-[![NachaLibre Screen Shot][product-screenshot]](https://example.com)
+[![NachaLibre Screen Shot][product-screenshot]](NachaOutput/20260212000934NachaFile.ach)
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 ### Tools used during development
 * [![VSCode][VSCode]][VSCode-url]
-* AutoHotkey v2.0
-* Microsoft Excel
-* Notepad++
+* [AutoHotkey v2.0](https://www.autohotkey.com/)
+* [Microsoft Excel](https://excel.cloud.microsoft/)
+* [Notepad++](https://notepad-plus-plus.org/)
 * No AI 😉
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- GETTING STARTED -->
 ## Getting Started
-You'll want a editor for the script, the AHK runtime, and likely an editor for CSVs.
+I'm assuming you've got your payroll laid out in a spreadsheet, in Microsoft Excel, Apple Numbers, LibreOffice Calc, or Google Docs.  
+This is great for running preliminary calculations. Just export it as CSV when ready.  
+(See the example spreadsheet and CSV in the [SourceCSVs folder](SourceCSVs) for reference.)
 
-Personally, I recommend SciTE4AHK if you haven't used AHK before.
+As for the script, you'll want some code editor to tweak it to your taste.  
+Personally, I've been using Visual Studio Code lately, but I initially used SciTE4AutoHotkey.  
+Notepad++ is a rock-solid editor too, but not as much integration.
 
-To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, Microsoft Excel, or Google Sheets.
+To actually run the script, there's two ways to go about it.  
+You can run the script directly from source using the AutoHotkey v2.0 runtime.  
+Or you can use the compiled version (I've included an executable of it for convenience).  
+If you've installed AutoHotkey v2.0, it comes with Ahk2Exe, which can compile your script.
 
 ## Prerequisites / Recommendations
 ### Pick an editor for changing the script:
@@ -103,7 +106,7 @@ To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, M
   ```
 
 ### To run script source code directly or compile to .exe:
-* AutoHotKey v2.0
+* AutoHotkey v2.0
   ```sh
   https://www.autohotkey.com/
   ```
@@ -149,11 +152,10 @@ See the [open issues](https://github.com/TrevorLaneRay/NachaLibre/issues) for a 
 
 <!-- CONTRIBUTING -->
 ## Contributing
-Contributions of ideas would be **greatly appreciated**.
-
-I'm just doing this as a side project, so if you want to reproduce this as your own, I've licensed it so you can do so without worries. 😘
-
-If you've got a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Contributions of ideas would be **greatly appreciated**.  
+I'm just doing this as a side project, so if you want to reproduce this as your own, I've licensed it so you can do so without worries. 😘  
+If you've got a suggestion that would make this better, please fork the repo and create a pull request.  
+You can also simply open an issue with the tag "enhancement".
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/CheeseDip`)
@@ -172,7 +174,7 @@ If you've got a suggestion that would make this better, please fork the repo and
 
 <!-- LICENSE -->
 ## License
-Distributed under CC0 1.0 Universal. See `LICENSE.txt` for more information.
+Distributed under CC0 1.0 Universal. See [LICENSE.txt](LICENSE.txt) for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

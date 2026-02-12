@@ -129,7 +129,7 @@ To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, M
     * Shift+F12: Reload the script (handy if you've made a change to the Settings .ini file).
     * Ctrl+Shift+F12: Terminate the script. (Can also be closed through the tray icon's context menu.)
 
-_For some fun reading, please refer to the [Documentation](https://example.com)._
+_For some fun reading, please refer to the [Documentation](Documentation)._
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

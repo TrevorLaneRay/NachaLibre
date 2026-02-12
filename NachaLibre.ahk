@@ -1,6 +1,6 @@
 /*
 	/=======================================================================\
-	|NachaLibre 2.0
+	|NachaLibre
 	|	Overhauled version of the original NachaLibre script.
 	|	TODO:
 	|		+Auto-split nacha output file into two parts if exceeds max amount.
@@ -62,7 +62,7 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 InstallKeybdHook true true
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "2.20"
+scriptVersion := "1.0"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion

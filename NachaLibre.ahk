@@ -1,7 +1,7 @@
 /*
 	/=======================================================================\
 	|NachaLibre
-	|	Overhauled version of the original NachaLibre script.
+	|	A straightforward script for converting CSV payroll data into NACHA format for ACH transactions.
 	|	TODO:
 	|		+Auto-split nacha output file into two parts if exceeds max amount.
 	|			+Should set the "Part2" to be transacted on transactionDayOffset+1.
@@ -13,16 +13,18 @@
 	|		+Use OutputDebug for logging to aid in debugging with tools like VS Code?
 	|			+e.g.: OutputDebug A_Now ': Derp happened. Input file did not exist. Go Fish.'
 	|	Problems:
-	|		+IniRead is loading default values instead of those in the .ini file. Why?
-	|			+Because I'm an idiot and was rewriting the variable with its default values after reading it. Fixed now.
+	|		+None yet. Just needs more functionality.
+	|	Ideas:
+	|		+Break out individual functions into separate .ahk files for organization, and to allow users to more easily edit specific functionality.
 	\=======================================================================/
 */
 
 /*
 	/=======================================================================\
 	|Compiler Directives
-	|	These commented lines are for the compiler.
-	|	If turning the script into an executable, this helps.
+	|	These commented lines are for the compiler. (They're ignored when running the script directly from source.)
+	|	Windows Defender sometimes flags compiled AutoHotkey scripts as suspicious, so compiling can help with that.
+	|	This especially comes in handy if you want to protect your source code from casual reverse-engineering.
 	\=======================================================================/
 */
 
@@ -60,9 +62,8 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 
 ;Ensure the script has the ability to differentiate between virtual and physical input.
 InstallKeybdHook true true
-InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "1.0"
+scriptVersion := "1.0.1"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -82,7 +83,7 @@ scriptLaunchTimestamp := A_Now
 
 ;File/Folder Settings
 DirCreate("ScriptFiles")
-DirCreate("ScriptIcons")
+DirCreate("ScriptIcons") ;In the future, we should probably have some way to download default icons if they're missing.
 DirCreate("ScriptLogs")
 
 scriptSettingsFile := "ScriptFiles\OriginalSettingsFile.ini" ;Initial loading of the original settings file. (A different file can be specified in this .ini)
@@ -109,7 +110,7 @@ if not FileExist(scriptHungIconFile)
 
 	;Loading logic to read the .ini file if it already exists.
 	;We'll start loading settings from .ini file, using a default value if it's missing from the file.)
-	;Note that the script will create its OriginalSettingsFile.ini, and if that file specifies a different file, we'll proceed with that instead.
+	;Note that the script will create its OriginalSettingsFile.ini if not present, but if that file exists and specifies a different file, we'll proceed with that instead.
 	scriptSettingsFile := IniRead(scriptSettingsFile, "ScriptSettings", "SettingsFileLocation", "ScriptFiles\OriginalSettingsFile.ini") ;Where this .ini file should be stored.
 
 	scriptSettingsTimestamp := IniRead(scriptSettingsFile, "SettingsInfo", "SettingsFileCreationTimestamp", A_Now) ;When this settings file was created.
@@ -212,6 +213,7 @@ transactionDay := FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "yyMM
 	|Hotkeys
 	|	These hotkeys are for controlling the state of the script.
 	|	These will work anywhere, not just in a specific window.
+	|	Should be replaced later on by GUI buttons and such, but for now these are good for testing and basic functionality.
 	\=======================================================================/
 */
 
@@ -282,7 +284,7 @@ ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by f
 	/=======================================================================\
 	|Beta Functionality
 	|	Here be dragons.
-	|	Functions here are not fully tested, and should be reviewed further.
+	|	Functions here are not fully finalized, and should be reviewed further.
 	\=======================================================================/
 */
 

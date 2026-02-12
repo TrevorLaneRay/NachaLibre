@@ -126,6 +126,7 @@ To edit your CSV files, I prefer a spreadsheet editor like LibreOffice Writer, M
 4. Launch the script, or your compiled version.
 5. Use the hotkeys to trigger the functions.
     * F11: Run the script on the specified CSV, outputting an .ach file that can be uploaded to your bank.
+    * F10: Open the script's settings file. (Reload the script after saving to apply any changes.)
     * Shift+F12: Reload the script (handy if you've made a change to the Settings .ini file).
     * Ctrl+Shift+F12: Terminate the script. (Can also be closed through the tray icon's context menu.)
 

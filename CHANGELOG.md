@@ -1,4 +1,13 @@
 # Changelog
+
+## v1.0.1
+### Added or Changed
+- New icons.
+- Added ReadMe mention of F10 hotkey for quick opening of script's settings.
+### Removed
+- Old version's icons didn't feel right, so replaced.
+- Duplicate keyboard hook on line 63 removed. (Unsure how I duplicated that.)
+
 ## v1.0.0
 ### Added or Changed
 - Initial commit of first working version.

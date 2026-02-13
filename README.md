@@ -134,6 +134,7 @@ _For some fun reading, please refer to the [Documentation](Documentation)._
 
 <!-- ROADMAP -->
 ## Roadmap
+- [⏳] Break script functions out into individual libraries for easier code management.
 - [⏳] Figure out how signing an executable works, to stop Windows' SAC from freaking out.
 - [⏳] Automatically split .ach if it exceeds bank's daily limit.
 - [⏳] Replace hotkey triggers with GUI buttons.

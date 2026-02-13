@@ -165,7 +165,9 @@ You can also simply open an issue with the tag "enhancement".
 
 <!-- LICENSE -->
 ## License
-Distributed under CC0 1.0 Universal. See [LICENSE.txt](LICENSE.txt) for more information.
+<a href="https://github.com/TrevorLaneRay/NachaLibre">NachaLibre</a> by <a href="https://github.com/TrevorLaneRay">Trevor Ray</a> is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
+
+<img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/zero.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
 
 
 <!-- CONTACT -->

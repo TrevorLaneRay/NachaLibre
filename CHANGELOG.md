@@ -1,4 +1,13 @@
 # Changelog
+## v1.0.2
+### Added or Changed
+- Added an error handler to panic if a routing number isn't 9 digits long. (fixes #1)
+    - This can happen if Excel removes a leading 0 or the account/routing number columns get transposed, or a typo.
+    - Recompiled [executable](NachaLibre.exe) to reflect this version.
+- Corrected [SampleCSV.csv](SourceCSVs/SampleCSV.csv); the account/routing number columns were switched.
+- Added an [Excel spreadsheet version](SourceCSVs/SampleCSV.xlsx) of the sample CSV for ease of use.
+### Removed
+- Removed broken version of example CSV.
 
 ## v1.0.1
 ### Added or Changed

@@ -63,7 +63,7 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 ;Ensure the script has the ability to differentiate between virtual and physical input.
 InstallKeybdHook true true
 ;Version & author of the script.
-scriptVersion := "1.0.1"
+scriptVersion := "1.0.2"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -352,6 +352,12 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 			ppdField2Data := "22" ;Indicates that the payee has a Checking account.
 		} else if CSVField4Array[A_Index] = "Savings" {
 			ppdField2Data := "32" ;Indicates that the payee has a Savings account.
+		}
+		;Panic if the routing number is not 9 digits, as that would invalidate the entire file and cause it to be rejected by the bank.
+		;(This should be checked before we even attempt to construct the line, to avoid generating an invalid file.)
+		if StrLen(CSVField5Array[A_Index]) != 9 {
+			LogEvent("Error", "Truncated Employee Routing Number for entry " . A_Index . ".`nOffending routing number: " . CSVField5Array[A_Index] . "`nWe'll abort for now.`nPlease verify that all routing numbers are 9 digits, including leading zeros if necessary.")
+			Reload ;For now, we'll just restart the script to prevent generating an invalid NACHA file.
 		}
 		ppdField3Data := SubStr(Format("{:09}", CSVField5Array[A_Index]), 1, 8) ;First eight digits of Employee Routing Number
 		entryHash += ppdField3Data

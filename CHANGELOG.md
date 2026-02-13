@@ -1,4 +1,9 @@
 # Changelog
+## v1.0.3
+### Added or Changed
+- Started moving core functions to separate [libraries](Libraries) for better modularity/organization.
+- Started working on [functions to encode icons](Libraries/IconEncoder.ahk) to Base64 for default icon deployment from executable. (Decoding will come later.)
+
 ## v1.0.2
 ### Added or Changed
 - Added an error handler to panic if a routing number isn't 9 digits long. (Fixed in commit 3e11354)

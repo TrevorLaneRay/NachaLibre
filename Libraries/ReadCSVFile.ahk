@@ -1,6 +1,7 @@
 ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by field.
 {
-	TraySetIcon scriptActiveIconFile
+	if FileExist(scriptActiveIconFile)
+		TraySetIcon scriptActiveIconFile
 	;Load CSV file into an variable.
 	csvFile := FileRead(fileNameToRead)
 	global csvLineCount := 0

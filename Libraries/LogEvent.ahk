@@ -3,14 +3,17 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 	;"Event" = Normal functionality events.
 	;"Error" = Something went wrong. We notify the user and log it.
 	;"Notice" = Nothing's wrong, but we need to tell the user something and log it.
-	if FileExist(scriptActiveIconFile)
-		TraySetIcon scriptActiveIconFile
 	logTimeStamp := A_Now
 	scriptRunTime := DateDiff(logTimeStamp, scriptLaunchTimestamp, "Seconds")
 
 	outputLogData := "/=======================================================================\`nLog Type: " . eventType . "`nScript Launched: " . scriptLaunchTimestamp . "`nLog Timestamp: " . logTimeStamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogEntry:`n" . logInfo . "`n\=======================================================================/`n"
 	FileAppend(outputLogData, scriptLogFile)
 
+	if eventType = "Event" {
+		;If it's just a normal event, we don't need to notify the user, so we can just log it and carry on.
+		return
+	}
+	
 	;If the event is serious, we want to display a message to the user.
 	if eventType = "Notice"
 	{

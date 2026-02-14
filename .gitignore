@@ -1,5 +1,4 @@
 NachaOutput
 SourceCSVs
-ScriptFiles/OldSettingsFile.ini
-ScriptFiles/OriginalSettingsFile.ini
+ScriptFiles/CustomSettingsFile.ini
 ScriptLogs/ScriptLog.log

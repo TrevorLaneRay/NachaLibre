@@ -1,4 +1,13 @@
 # Changelog
+## v1.1.1
+### Added or Changed
+- Tweaked .gitignore to prevent accidental push of sensitive files.
+- Adjusted LogEvent() to have a blank line in between each log entry for readability.
+- Added compiler instruction to include icons in the compiled executable.
+ - Executable is now fully capable of self-deploying all necessary files as a standalone program. 🥳  
+ (This means you should probably put it somewhere production-ready, and not in your freakin' Downloads folder.)  
+ (Make a folder on your Desktop, and stick it in there perhaps?)
+
 ## v1.1.0
 ### Added or Changed
 - Finished refactoring script to offload most functions to libraries.

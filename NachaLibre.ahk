@@ -60,7 +60,7 @@
 InstallKeybdHook true true
 
 ;Version & author of the script.
-scriptVersion := "1.1.0"
+scriptVersion := "1.1.1"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -91,11 +91,23 @@ DirCreate(csvFileFolderName)
 DirCreate(auditLogFileFolderName)
 DirCreate(nachaFileFolderName)
 
+;Make sure our icons are embedded in the compiled script.
+;This can be ignored/removed if you're just running the script from source.
+;It's necessary for the compiled version to redeploy the icons if missing.
+FileInstall("ScriptIcons\ScriptIcon.ico", scriptIconFile, 1)
+FileInstall("ScriptIcons\ActiveIcon.ico", scriptActiveIconFile, 1)
+FileInstall("ScriptIcons\SuccessIcon.ico", scriptSuccessIconFile, 1)
+FileInstall("ScriptIcons\ErrorIcon.ico", scriptErrorIconFile, 1)
+FileInstall("ScriptIcons\WarningIcon.ico", scriptWarningIconFile, 1)
+FileInstall("ScriptIcons\HungIcon.ico", scriptHungIconFile, 1)
+
 ;Make sure our tray icon is set to something appropriate, if the file exists. If not, log an error and continue without the icon.
 if FileExist(scriptIconFile)
 	TraySetIcon scriptIconFile
 else if not FileExist(scriptIconFile)
 	LogEvent("Error", "Couldn't load main script icon file.`nVerify that the icons are present for better indicators.")
+
+LogEvent("Event", "Script launched. Version: " . scriptVersion . ". Author: " . scriptAuthor . ".`nSettings loaded from file: " . scriptSettingsFile)
 
 /*
 	/=======================================================================\

@@ -6,7 +6,7 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 	logTimeStamp := A_Now
 	scriptRunTime := DateDiff(logTimeStamp, scriptLaunchTimestamp, "Seconds")
 
-	outputLogData := "/=======================================================================\`nLog Type: " . eventType . "`nScript Launched: " . scriptLaunchTimestamp . "`nLog Timestamp: " . logTimeStamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogEntry:`n" . logInfo . "`n\=======================================================================/`n"
+	outputLogData := "/=======================================================================\`nLog Type: " . eventType . "`nScript Launched: " . scriptLaunchTimestamp . "`nLog Timestamp: " . logTimeStamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogEntry:`n" . logInfo . "`n\=======================================================================/`n`n"
 	FileAppend(outputLogData, scriptLogFile)
 
 	if eventType = "Event" {

@@ -147,7 +147,7 @@ if FileExist(defaultScriptSettingsFile) {
 
 if newDefaultSettingsFileCreated{
     Run scriptSettingsFile ;Open the newly created default settings file for the user to review.
-    LogEvent("Event", "No settings file found, so a new default settings file has been created at " . defaultScriptSettingsFile)
+    LogEvent("Event", "No settings file found, so a new default settings file has been created at " . defaultScriptSettingsFile . "`nTerminating script to allow user to review and customize settings before relaunching.")
     Sleep(2000) ;Wait for 2 seconds to ensure the file has opened before showing the message box.
     MsgBox("Default Settings File Created, A new default settings file has been created in " . defaultScriptSettingsFile . ".`n`nPlease review this file and adjust settings as necessary for your use case.`nIf you want to use a different settings file for customization, create a copy of this default settings file, specify the name of that copy in the `"SettingsFileLocation`" setting in the default settings file, and then edit that copy with your custom settings.`nIf you have any questions or need assistance, please refer to the documentation or boop Trevor on the nose.`nThe script will now terminate.`nRelaunch once settings are sorted out.", "New Settings File Created", "Iconi")
     ExitApp()

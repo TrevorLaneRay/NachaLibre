@@ -8,6 +8,12 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	entryHash := 0 ;Will contain a sum of all entries' Recieving DFI IDs.
 	totalCreditAmount := 0 ;Used in File and Batch Control Records, for sanity check.
 
+	;Calculate dates for pay period, payday, and transaction day based on the current date and the offsets specified in the .ini file.
+	payPeriodBegin := DateAdd(A_Now, payPeriodBeginOffset, "days") ;Date that the pay period began. (By default, two weeks ago).
+	payPeriodEnd := DateAdd(A_Now, PayPeriodEndOffset, "days") ;Date that the pay period ended. (By default, two days ago).
+	payDay := FormatTime(DateAdd(A_Now, payDayOffset, "days"),"MMM dd") ;Descriptive date that payday is (Assuming this is tomorrow).
+	transactionDay := FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "yyMMdd") ;Day that the bank transaction should occur (Assuming this is tomorrow).
+
 	;/===================File Header Record===================\
 	nachaLine .= "1" ;Record Type Code (This will never change.)
 	nachaLine .= "01" ;Priority Code (This will never change.)
@@ -34,7 +40,7 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	nachaLine .= "220" ;Service Class Code
 	nachaLine .= SubStr(Format("{:-16}", payrollCompanyName), 1, 16) ;Company Name (TODO: Trim company name to 16chars *before* padding, so that it doesn't overflow if longer.)
 	nachaLine .= Format("{:020}", payrollAccountNumber) ;Company Discretionary Data
-	nachaLine .= "0000000000" ;Company Identification (EIN for Taxes, ignored by Chase)
+	nachaLine .= "0000000000" ;Company Identification (EIN for Taxes, ignored by Chase Bank?)
 	nachaLine .= "PPD" ;Standard Entry Class Code
 	nachaLine .= Format("{:-10}", "PAYROLL") ;Company Entry Description
 	nachaLine .= payDay ;Company Descriptive Date (Payday)
@@ -64,7 +70,7 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 			ppdField2Data := "32" ;Indicates that the payee has a Savings account.
 		}
 		;Panic if the routing number is not 9 digits, as that would invalidate the entire file and cause it to be rejected by the bank.
-		;(This should be checked before we even attempt to construct the line, to avoid generating an invalid file.)
+		;TODO: This should be checked before we even attempt to construct the line, to avoid generating an invalid file.
 		if StrLen(CSVField5Array[A_Index]) != 9 {
 			LogEvent("Error", "Truncated Employee Routing Number for entry " . A_Index . ".`nOffending routing number: " . CSVField5Array[A_Index] . "`nWe'll abort for now.`nPlease verify that all routing numbers are 9 digits, including leading zeros if necessary.")
 			Reload ;For now, we'll just restart the script to prevent generating an invalid NACHA file.
@@ -88,7 +94,7 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	}
 	if totalCreditAmount >= maxPayrollAmount
 	{
-		LogEvent("Error", "Max Payroll Amount Exceeded.`n Payroll: $" . totalCreditAmount . "`nPayroll Limit: $" . maxPayrollAmount . "`nIf this is a bank-imposed limit, this NACHA file will not be accepted.")
+		LogEvent("Error", "Max Payroll Amount Exceeded.`nPayroll: $" . Round(totalCreditAmount, 2) . "`nPayroll Limit: $" . maxPayrollAmount . "`nIf this is a bank-imposed limit, this NACHA file will not be accepted.")
 		;TODO: Implement logic to split the payroll into multiple batches/files if the total amount exceeds the specified limit.
 	}
 	;~ else LogEvent("Event", "Constructed Entry Detail Records.`nEntry Count: " . totalEntryCounter . "`nTotal Payment Amount: $" . totalCreditAmount)
@@ -167,7 +173,7 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	FileAppend(nachaData,nachaFileFolderName . "\" . dateStamp . NachaFileName . ".ach")
 	if FileExist(scriptSuccessIconFile)
 		TraySetIcon scriptSuccessIconFile
-	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . transactionDay . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.")
+	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "MMM dd") . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.")
 	if FileExist(scriptIconFile)
 		TraySetIcon scriptIconFile
 	return

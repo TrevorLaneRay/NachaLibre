@@ -1,7 +1,18 @@
 # Changelog
+## v1.1.0
+### Added or Changed
+- Finished refactoring script to offload most functions to libraries.
+- Overhauled the loading of the settings file to be more... sane.
+    - Now the script can cleanly create a default settings file from scratch.
+    - If a new default settings file was created in its absence, it will now automatically open for quick, easy editing.
+    - (Still deciding on a way to ensure all settings fields are present in the file, to handle if they're absent.)
+- Simplified icon names.
+- Fixed LogEvent() not checking to make sure a tray icon file exists before attempting to set it.
+- Moved dates' calculations for pay periods, payday and transaction day to NachaConstructor(), instead of being in the main file. 
+
 ## v1.0.3
 ### Added or Changed
-- Started moving core functions to separate [libraries](Libraries) for better modularity/organization.
+- Started sorting core functions into separate [libraries](Libraries) for better modularity/organization.
 - Started working on [functions to encode icons](Libraries/IconEncoder.ahk) to Base64 for default icon deployment from executable. (Decoding will come later.)
 
 ## v1.0.2

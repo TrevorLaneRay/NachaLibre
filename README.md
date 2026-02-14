@@ -114,7 +114,8 @@ If you've installed AutoHotkey v2.0, it comes with Ahk2Exe, which can compile yo
 2. Download and install AHK.
 3. Set your editor to be the default for .ahk source files.
 4. Download the git repo to somewhere easy to use. (Your desktop maybe?)
-5. Modify the settings .ini file to specify your source CSV, bank info, and payday / transaction date offsets.
+5. Modify the settings .ini file to specify your source CSV, bank info, and payday / transaction date offsets.  
+(Recommend creating a separate .ini settings file for custom settings, instead of directly editing the default.)
 
 
 <!-- USAGE CLARIFICATION -->
@@ -134,7 +135,7 @@ _For some fun reading, please refer to the [Documentation](Documentation)._
 
 <!-- ROADMAP -->
 ## Roadmap
-- [⏳] Break script functions out into individual libraries for easier code management.
+- [⏳] Put together a straightforward tutorial on how to use, so that your average office-worker can understand it.
 - [⏳] Figure out how signing an executable works, to stop Windows' SAC from freaking out.
 - [⏳] Automatically split .ach if it exceeds bank's daily limit.
 - [⏳] Replace hotkey triggers with GUI buttons.

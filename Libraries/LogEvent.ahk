@@ -3,7 +3,7 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 	;"Event" = Normal functionality events.
 	;"Error" = Something went wrong. We notify the user and log it.
 	;"Notice" = Nothing's wrong, but we need to tell the user something and log it.
-	if FileExist(scriptIconFile)
+	if FileExist(scriptActiveIconFile)
 		TraySetIcon scriptActiveIconFile
 	logTimeStamp := A_Now
 	scriptRunTime := DateDiff(logTimeStamp, scriptLaunchTimestamp, "Seconds")
@@ -11,6 +11,7 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 	outputLogData := "/=======================================================================\`nLog Type: " . eventType . "`nScript Launched: " . scriptLaunchTimestamp . "`nLog Timestamp: " . logTimeStamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogEntry:`n" . logInfo . "`n\=======================================================================/`n"
 	FileAppend(outputLogData, scriptLogFile)
 
+	;If the event is serious, we want to display a message to the user.
 	if eventType = "Notice"
 	{
 		;Here we'll display an informational message to the user, informing them of the event we just logged.
@@ -24,7 +25,7 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 			TraySetIcon scriptErrorIconFile
 		MsgBox("Timestamp: " . scriptLaunchTimestamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogged message:`n" . logInfo, "NachaLibre Error", "Icon!")
 	}
-
+	;After logging the event, we should reset the tray icon to the normal one, if it exists.
 	if FileExist(scriptIconFile)
 		TraySetIcon scriptIconFile
 	return

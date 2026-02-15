@@ -1,4 +1,9 @@
 # Changelog
+## v1.1.2
+### Added or Changed
+- Changed NachaConstructor()'s output file name to be csvFileName - timeDateStamp format.
+- Added input/output filenames to log entries for completed NachaConstructor() runs.
+
 ## v1.1.1
 ### Added or Changed
 - Tweaked .gitignore to prevent accidental push of sensitive files.

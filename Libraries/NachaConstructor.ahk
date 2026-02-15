@@ -5,7 +5,7 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	nachaLineCounter := 0 ;Will contain the total number of lines that should be in the file. (Used for padding and blocks.)
 	totalEntryCounter := 0 ;Will contain the total number of entry and addenda records.
 	batchEntryCounter := 0 ;Will contain the current counter of entries in the current batch.
-	entryHash := 0 ;Will contain a sum of all entries' Recieving DFI IDs.
+	entryHash := 0 ;Will contain a sum of all entries' Recieving DFI IDs. (Sum of first 8 digits of each entry's routing number.)
 	totalCreditAmount := 0 ;Used in File and Batch Control Records, for sanity check.
 
 	;Calculate dates for pay period, payday, and transaction day based on the current date and the offsets specified in the .ini file.
@@ -170,10 +170,12 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 
 	A_Clipboard := nachaData
 	dateStamp := A_YYYY . A_MM . A_DD . A_Hour . A_Min . A_Sec
-	FileAppend(nachaData,nachaFileFolderName . "\" . dateStamp . NachaFileName . ".ach")
+	;Yeah, think we'll instead name the file according to the original CSV file's name, with a timestamp.
+	;Can probably do away with nachaFileName variable at this point, since the file name is now based on the CSV file name.
+	FileAppend(nachaData,nachaFileFolderName . "\" . SubStr(csvFileName, 1, -4) . " - " . dateStamp . ".ach")
 	if FileExist(scriptSuccessIconFile)
 		TraySetIcon scriptSuccessIconFile
-	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "MMM dd") . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.")
+	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "MMM dd") . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.`nInput File: " . csvFileName . "`nOutput File: " . nachaFileName)
 	if FileExist(scriptIconFile)
 		TraySetIcon scriptIconFile
 	return

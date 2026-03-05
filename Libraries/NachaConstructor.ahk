@@ -1,4 +1,4 @@
-NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
+﻿NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 	TraySetIcon scriptActiveIconFile
 	nachaData :=  "" ;Will contain the raw text data of the entire Nacha file.
 	nachaLine := "" ;Will contain the current line of the Nacha file we're working on.
@@ -82,11 +82,13 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 		ppdField6Data := Format("{:010}", StrReplace(CSVField7Array[A_Index], ".")) ;Dollar amount, formatted as $$$$$$$$¢¢
 		totalCreditAmount += CSVField7Array[A_Index] ;Total dollar amount thus far.
 		ppdField7Data := Format("{:-15}", Trim(CSVField1Array[A_Index], " ")) ;Individual Identification Number
-		ppdField8Data := SubStr(Format("{:-22}", Trim(CSVField2Array[A_Index] . " " CSVField3Array[A_Index], " ")), 1, 22) ;Employee Name
+		;NOTE: ACH files are purely ASCII, so any special characters in employee names (like accents, apostrophes, etc.) need to be converted to their closest ASCII equivalent, or else the remainder of this line gets offset by two characters to the left.
+		ppdField8Data := SubStr(Format("{:-22}", StrReplace(Trim(CSVField2Array[A_Index] . " " CSVField3Array[A_Index], " "), "’", "'")), 1, 22) ;Employee Name
 		ppdField9Data := Format("{:-2}", "") ;Discretionary Data (This is to be blank, just two spaces.)
 		ppdField10Data := "0" ;Addenda Record Indicator (Add later for additional pay period info / hours worked in employee bank statement.)
 		ppdField11Data := SubStr(payrollRoutingNumber, 1, 8) . Format("{:07}", batchEntryCounter) ;Trace Number
 
+		;Now that all the fields are preprocessed, concatenate 'em together to form the full line, and then append that line to the overall nachaData.
 		nachaLine := ppdField1Data . ppdField2Data . ppdField3Data . ppdField4Data . ppdField5Data . ppdField6Data . ppdField7Data . ppdField8Data . ppdField9Data . ppdField10Data . ppdField11Data . "`n"
 		nachaData .= nachaLine ;Append the current line's contents to the nachaData.
 		nachaLine := "" ;Reset current line's contents to be ready for the next line's content.
@@ -170,9 +172,9 @@ NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
 
 	A_Clipboard := nachaData
 	dateStamp := A_YYYY . A_MM . A_DD . A_Hour . A_Min . A_Sec
-	;Yeah, think we'll instead name the file according to the original CSV file's name, with a timestamp.
 	;Can probably do away with nachaFileName variable at this point, since the file name is now based on the CSV file name.
-	FileAppend(nachaData,nachaFileFolderName . "\" . SubStr(csvFileName, 1, -4) . " - " . dateStamp . ".ach")
+	;Then again, it might be nice to have the file name in a variable for logging purposes or future feature ideas, so I'll keep it for now.
+	FileAppend(nachaData,nachaFileFolderName . "\" . dateStamp . " - " . SubStr(csvFileName, 1, -4) . ".ach")
 	if FileExist(scriptSuccessIconFile)
 		TraySetIcon scriptSuccessIconFile
 	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "MMM dd") . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.`nInput File: " . csvFileName . "`nOutput File: " . nachaFileName)

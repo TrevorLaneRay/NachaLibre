@@ -1,4 +1,11 @@
 # Changelog
+## v1.1.3
+### Added or Changed
+- Reverted NachaConstructor()'s output filename to be "DateStamp - CSVFileName" format instead.
+    - (In a folder with hundreds of output .ach files, this helps with sorting. Should've kept it this way, honestly.)
+- Gave up (for now) on trying to implement some sort of Unicode - ASCII conversion for weird characters in employee names.
+- Added a black icon for future possibility of light/dark mode adaptive icons.
+
 ## v1.1.2
 ### Added or Changed
 - Changed NachaConstructor()'s output file name to be csvFileName - timeDateStamp format.

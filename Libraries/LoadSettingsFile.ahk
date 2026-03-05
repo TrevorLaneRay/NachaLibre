@@ -18,7 +18,8 @@ defaultScriptSettingsAuthor := scriptAuthor ;;Who authored the script that creat
 
 ;Default Script-Specific Settings
 defaultScriptLogFile := "ScriptLogs\ScriptLog.log" ;Make sure we have somewhere to dump diagnostic info to.
-defaultScriptIconFile := "ScriptIcons\ScriptIcon.ico" ;Icon indicating that the script is idle, and ready.
+defaultScriptIconFileLight := "ScriptIcons\ScriptIconBlack.ico" ;Icon indicating that the script is idle, and ready in light mode.
+defaultScriptIconFileDark := "ScriptIcons\ScriptIconWhite.ico" ;Icon indicating that the script is idle, and ready in dark mode.
 defaultScriptActiveIconFile := "ScriptIcons\ActiveIcon.ico" ;Icon indicating that the script is performing functions.
 defaultScriptSuccessIconFile := "ScriptIcons\SuccessIcon.ico" ;Icon indicating that a task has completed successfully.
 defaultScriptErrorIconFile := "ScriptIcons\ErrorIcon.ico" ;Icon indicating that an error has occurred.
@@ -59,7 +60,8 @@ if not FileExist(defaultScriptSettingsFile) {
 
     IniWrite(defaultScriptSettingsFile, defaultScriptSettingsFile, "ScriptSettings", "SettingsFileLocation")
 	IniWrite(defaultScriptLogFile, defaultScriptSettingsFile, "ScriptSettings", "ScriptLogFileLocation")
-	IniWrite(defaultScriptIconFile, defaultScriptSettingsFile , "ScriptSettings" , "ScriptIconFile")
+	IniWrite(defaultScriptIconFileLight, defaultScriptSettingsFile , "ScriptSettings" , "ScriptIconFileLight")
+    IniWrite(defaultScriptIconFileDark, defaultScriptSettingsFile , "ScriptSettings" , "ScriptIconFileDark")
 	IniWrite(defaultScriptActiveIconFile, defaultScriptSettingsFile, "ScriptSettings", "ScriptActiveIconFile")
 	IniWrite(defaultScriptSuccessIconFile, defaultScriptSettingsFile, "ScriptSettings", "ScriptSuccessIconFile")
 	IniWrite(defaultScriptErrorIconFile, defaultScriptSettingsFile, "ScriptSettings", "ScriptErrorIconFile")
@@ -112,7 +114,9 @@ if FileExist(defaultScriptSettingsFile) {
     scriptSettingsAuthor := IniRead(scriptSettingsFile, "SettingsInfo", "SettingsFileCreationAuthor", defaultScriptSettingsAuthor)
 
     scriptLogFile := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptLogFileLocation", defaultScriptLogFile)
-    scriptIconFile := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptIconFile", defaultScriptIconFile)
+    scriptIconFileLight := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptIconFileLight", defaultScriptIconFileLight)
+    scriptIconFileDark := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptIconFileDark", defaultScriptIconFileDark)
+
     scriptActiveIconFile := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptActiveIconFile", defaultScriptActiveIconFile)
     scriptSuccessIconFile := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptSuccessIconFile", defaultScriptSuccessIconFile)
     scriptErrorIconFile := IniRead(scriptSettingsFile, "ScriptSettings", "ScriptErrorIconFile", defaultScriptErrorIconFile)

@@ -60,7 +60,7 @@
 InstallKeybdHook true true
 
 ;Version & author of the script.
-scriptVersion := "1.1.3"
+scriptVersion := "1.1.4"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -95,18 +95,32 @@ DirCreate(nachaFileFolderName)
 ;When the compiled version is run, it will deploy the icons to the ScriptIcons folder if they don't already exist.
 ;This can be ignored/removed if you're just running the script from source.
 ;It's necessary for the compiled version to redeploy the icons if missing.
-FileInstall("ScriptIcons\ScriptIcon.ico", scriptIconFile, 1)
+FileInstall("ScriptIcons\ScriptIconBlack.ico", scriptIconFileLight, 1)
+FileInstall("ScriptIcons\ScriptIconWhite.ico", scriptIconFileDark, 1)
 FileInstall("ScriptIcons\ActiveIcon.ico", scriptActiveIconFile, 1)
 FileInstall("ScriptIcons\SuccessIcon.ico", scriptSuccessIconFile, 1)
 FileInstall("ScriptIcons\ErrorIcon.ico", scriptErrorIconFile, 1)
 FileInstall("ScriptIcons\WarningIcon.ico", scriptWarningIconFile, 1)
 FileInstall("ScriptIcons\HungIcon.ico", scriptHungIconFile, 1)
 
+;Here we'll choose a Light or Dark theme icon based on the user's system settings, if we can read them from the registry.
+try {
+    isDarkModeUser := RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme") = 0
+    if (isDarkModeUser)
+        scriptIconFile := ScriptIconFileDark ;Use the white icon for dark mode users.
+    else
+        scriptIconFile := scriptIconFileLight ;Use the black icon for light mode users.
+} catch {
+    try{
+    	scriptIconFile := ScriptIconFileDark ;If we can't read the registry for some reason, just default to the white icon.
+    }
+}
+
 ;Make sure our tray icon is set to something appropriate, if the file exists. If not, log an error and continue without the icon.
 if FileExist(scriptIconFile)
 	TraySetIcon scriptIconFile
 else if not FileExist(scriptIconFile)
-	LogEvent("Error", "Couldn't load main script icon file.`nVerify that the icons are present for better indicators.")
+	LogEvent("Error", "Couldn't load main script icon file:`n" . scriptIconFile . "`nVerify that the icons are present for better indicators.`nFor now, the tray icon will not indicate script status.")
 
 LogEvent("Event", "Script launched. Version: " . scriptVersion . ". Author: " . scriptAuthor . ".`nSettings loaded from file: " . scriptSettingsFile)
 

@@ -1,4 +1,8 @@
 # Changelog
+## v1.1.4
+### Added or Changed
+- Light/Dark Mode Icon switch functionality.
+
 ## v1.1.3
 ### Added or Changed
 - Reverted NachaConstructor()'s output filename to be "DateStamp - CSVFileName" format instead.

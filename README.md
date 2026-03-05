@@ -12,7 +12,7 @@
 <div align="center">
   <a href="https://github.com/TrevorLaneRay/NachaLibre">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="ScriptIcons/SourceImages/ScriptIcon.png" width="128" height="128">
+      <source media="(prefers-color-scheme: dark)" srcset="ScriptIcons/SourceImages/ScriptIconWhite.png" width="128" height="128">
       <source media="(prefers-color-scheme: light)" srcset="ScriptIcons/SourceImages/ScriptIconBlack.png" width="128" height="128">
       <img alt="NachaLibre Logo" src="ScriptIcons/SourceImages/ScriptIconBlack.png" width="128" height="128">
     </picture>

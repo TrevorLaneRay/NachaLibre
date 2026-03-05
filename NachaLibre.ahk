@@ -1,21 +1,15 @@
-/*
+﻿/*
 	/=======================================================================\
 	|NachaLibre
 	|	A straightforward script for converting CSV payroll data into NACHA format for ACH transactions.
 	|
 	|	TODO:
-	|		+Splitting the output into multiple files is lazy...
-	|			+Instead, utilize the intended structure of the NACHA file, and just create multiple batches within the same file.
-	|			+Yes, this would be a bit of a hassle to rewrite the NachaConstructor() function, but it would be worth it for the sake of better organization and cleaner output.
-	|			+Then again, what if we were to just loop over each source CSV file in the intended input folder, and generate a separate NACHA file for each one?
-	|			+That way we can keep the current structure of the NachaConstructor() function, and just have it generate multiple files based on the number of source CSV files.
-	|			+Totally #TechnicalDebt, but it would be a quick and dirty way to implement the functionality without having to rewrite the entire NachaConstructor() function.
-	|		+Implement optional Addenda Records for pay period info in employee bank statements.
+	|		+Implement batch splitting functionality for when the number of transactions exceeds the limits for a single NACHA file.
 	|		+Implement UX functionality like SFX/GUI elements.
 	|		+Improve logging functionality for fiscal audit/analysis (i.e.: for 1099 reporting, or just general record-keeping).
 	|
 	|	Problems:
-	|		+Nothing major yet. Just needs better functionality.
+	|		+Nothing major yet. Just needs more functionality.
 	|
 	|	Ideas:
 	|		+Use OutputDebug for logging to aid in debugging with tools like VS Code?
@@ -25,6 +19,7 @@
 	|			+Then again, VS Code can just attach to the new process after the UAC relaunch, so maybe it would work after all? Worth testing.
 	|		+Maybe some sort of employee lookup functionality, to catch errors in the CSV before generating the NACHA file.
 	|			+i.e.: If an employee's name is misspelled, or if their routing number is wrong, it could cause the employee's transaction to be rejected by the bank. So maybe we could have some sort of reference file with correct employee info, and then cross-reference the CSV against that to catch any discrepancies before we generate the NACHA file.
+	|			+Could also be expanded to verify routing numbers against a database of valid routing numbers, to catch any typos there as well.
 	\=======================================================================/
 */
 
@@ -65,7 +60,7 @@
 InstallKeybdHook true true
 
 ;Version & author of the script.
-scriptVersion := "1.1.2"
+scriptVersion := "1.1.3"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion

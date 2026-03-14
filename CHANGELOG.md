@@ -1,4 +1,11 @@
 # Changelog
+## v1.1.5a
+### Added or Changed
+- Nothing (yet).
+### Removed
+- Removed prototype base64 icon encoding libraries.  
+    (Because who expects an average office worker to understand what base64 is, or how/why image data would be encoded for script use?)
+
 ## v1.1.4
 ### Added or Changed
 - Light/Dark Mode Icon switch functionality.

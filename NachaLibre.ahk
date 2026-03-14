@@ -60,7 +60,7 @@
 InstallKeybdHook true true
 
 ;Version & author of the script.
-scriptVersion := "1.1.4"
+scriptVersion := "1.1.5"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion

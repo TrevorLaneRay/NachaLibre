@@ -9,13 +9,13 @@ ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by f
 
 	;Some blank arrays for when we read the CSV, later to be used for Entry Record generation.
 	;These should be global arrays, so that NachaConstructor() can use them later.
-	global CSVField1Array := []
-	global CSVField2Array := []
-	global CSVField3Array := []
-	global CSVField4Array := []
-	global CSVField5Array := []
-	global CSVField6Array := []
-	global CSVField7Array := []
+	global CSVField1Array := [] ;Employee ID
+	global CSVField2Array := [] ;First Name
+	global CSVField3Array := [] ;Last Name
+	global CSVField4Array := [] ;Account Type
+	global CSVField5Array := [] ;Routing Number
+	global CSVField6Array := [] ;Account Number
+	global CSVField7Array := [] ;Amount
 
 	;We now go through the CSV, row by row.
 	Loop Parse csvFile, "`n", "`r"

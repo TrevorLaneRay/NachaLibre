@@ -19,17 +19,17 @@ LogEvent(eventType := "Event", logInfo := "DERP"){ ;Diagnostic panic and logging
 	{
 		;Here we'll display an informational message to the user, informing them of the event we just logged.
 		if FileExist(scriptHungIconFile)
-			TraySetIcon scriptHungIconFile
+			TraySetIcon(scriptHungIconFile)
 		MsgBox("Timestamp: " . scriptLaunchTimestamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogged message:`n" . logInfo, "NachaLibre Notice", "Iconi")
 	} else if eventType = "Error"
 	{
 		;Here we'll display an error message to the user, informing them of the problem we just logged.
 		if FileExist(scriptErrorIconFile)
-			TraySetIcon scriptErrorIconFile
+			TraySetIcon(scriptErrorIconFile)
 		MsgBox("Timestamp: " . scriptLaunchTimestamp . "`nScript Runtime: " . scriptRunTime . " Seconds`n`nLogged message:`n" . logInfo, "NachaLibre Error", "Icon!")
 	}
 	;After logging the event, we should reset the tray icon to the normal one, if it exists.
 	if FileExist(scriptIconFile)
-		TraySetIcon scriptIconFile
+		TraySetIcon(scriptIconFile)
 	return
 }

@@ -57,10 +57,10 @@
 #Include Libraries/UACCheck.ahk ;This library checks if the script is running with admin privileges, and if not, restarts the script with those privileges.
 
 ;Ensure the script has the ability to differentiate between virtual and physical input.
-InstallKeybdHook true true
+InstallKeybdHook(true, true)
 
 ;Version & author of the script.
-scriptVersion := "1.1.5"
+scriptVersion := "1.1.5b"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -118,7 +118,7 @@ try {
 
 ;Make sure our tray icon is set to something appropriate, if the file exists. If not, log an error and continue without the icon.
 if FileExist(scriptIconFile)
-	TraySetIcon scriptIconFile
+	TraySetIcon(scriptIconFile)
 else if not FileExist(scriptIconFile)
 	LogEvent("Error", "Couldn't load main script icon file:`n" . scriptIconFile . "`nVerify that the icons are present for better indicators.`nFor now, the tray icon will not indicate script status.")
 
@@ -134,10 +134,10 @@ LogEvent("Event", "Script launched. Version: " . scriptVersion . ". Author: " . 
 */
 
 #UseHook
-Pause::Pause ;Panic button. Sometimes it's nice to just halt and catch fire.
-+F12::Reload ;Restart the script, reloading settings from the .ini file.
-^+F12::ExitApp ;Terminate the script immediately.
-F10:: Run scriptSettingsFile ;Open the .ini file used for settings.
+Pause::Pause() ;Panic button. Sometimes it's nice to just halt and catch fire.
++F12::Reload() ;Restart the script, reloading settings from the .ini file.
+^+F12::ExitApp() ;Terminate the script immediately.
+F10:: Run(scriptSettingsFile) ;Open the .ini file used for settings.
 
 F11:: ;Main functionality.
 {

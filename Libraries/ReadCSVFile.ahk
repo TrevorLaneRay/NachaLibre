@@ -1,7 +1,7 @@
 ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by field.
 {
 	if FileExist(scriptActiveIconFile)
-		TraySetIcon scriptActiveIconFile
+		TraySetIcon(scriptActiveIconFile)
 	;Load CSV file into an variable.
 	csvFile := FileRead(fileNameToRead)
 	global csvLineCount := 0
@@ -36,6 +36,6 @@ ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by f
 	}
 
 	LogEvent("Event", "CSV successfully processed.`nCSV File Lines: " . csvLineCount)
-	TraySetIcon scriptIconFile
+	TraySetIcon(scriptIconFile)
 	return
 }

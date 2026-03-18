@@ -1,4 +1,9 @@
 # Changelog
+## v1.1.5b
+### Added or Changed
+- Clarified what each array is for in ReadCSVFile().
+- Refactored for better consistency - added parenthesis on functions (not necessary, but makes sense.)
+
 ## v1.1.5a
 ### Added or Changed
 - Nothing (yet).

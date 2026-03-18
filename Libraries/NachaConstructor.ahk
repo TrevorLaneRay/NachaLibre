@@ -1,5 +1,5 @@
 ﻿NachaConstructor(*){ ;Build the Nacha file line by line, field by field.
-	TraySetIcon scriptActiveIconFile
+	TraySetIcon(scriptActiveIconFile)
 	nachaData :=  "" ;Will contain the raw text data of the entire Nacha file.
 	nachaLine := "" ;Will contain the current line of the Nacha file we're working on.
 	nachaLineCounter := 0 ;Will contain the total number of lines that should be in the file. (Used for padding and blocks.)
@@ -73,7 +73,7 @@
 		;TODO: This should be checked before we even attempt to construct the line, to avoid generating an invalid file.
 		if StrLen(CSVField5Array[A_Index]) != 9 {
 			LogEvent("Error", "Truncated Employee Routing Number for entry " . A_Index . ".`nOffending routing number: " . CSVField5Array[A_Index] . "`nWe'll abort for now.`nPlease verify that all routing numbers are 9 digits, including leading zeros if necessary.")
-			Reload ;For now, we'll just restart the script to prevent generating an invalid NACHA file.
+			Reload() ;For now, we'll just restart the script to prevent generating an invalid NACHA file.
 		}
 		ppdField3Data := SubStr(Format("{:09}", CSVField5Array[A_Index]), 1, 8) ;First eight digits of Employee Routing Number
 		entryHash += ppdField3Data
@@ -176,9 +176,9 @@
 	;Then again, it might be nice to have the file name in a variable for logging purposes or future feature ideas, so I'll keep it for now.
 	FileAppend(nachaData,nachaFileFolderName . "\" . dateStamp . " - " . SubStr(csvFileName, 1, -4) . ".ach")
 	if FileExist(scriptSuccessIconFile)
-		TraySetIcon scriptSuccessIconFile
+		TraySetIcon(scriptSuccessIconFile)
 	LogEvent("Notice", totalEntryCounter . " entries processed.`nPay Period: " . FormatTime(payPeriodBegin, "MMM dd") . "-" . FormatTime(payPeriodEnd, "MMM dd") . "`nTotal amount: $" . Round(totalCreditAmount, 2) . "`nPayday: " . payDay . "`nTransaction Date: " . FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "MMM dd") . "`nSource Account: " . payrollAccountNumber . "`nSource Routing: " . payrollRoutingNumber . "`nThe " . (nachaFileLines + paddingLineCount) . "-line NACHA file has been saved.`nInput File: " . csvFileName . "`nOutput File: " . nachaFileName)
 	if FileExist(scriptIconFile)
-		TraySetIcon scriptIconFile
+		TraySetIcon(scriptIconFile)
 	return
 }

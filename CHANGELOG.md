@@ -9,6 +9,8 @@
     - Basically, when the deposit would exceed the bank's daily limit, a new "batch" would be created in the *.ach file, scheduling the deposit for the next day (TransactionDayOffset + 1).
     - The tough part is making sure the *.ach's checksumming remains sane.
     - (Incomplete for now, but implementing it slowly without breaking functionality.)
+- Recompiled executable for v1.2.0a (tested, working).
+    - In the future, I might just move compiled builds to a separate folder, to keep a historical copy of each version.
 
 ## v1.1.5b
 ### Added or Changed

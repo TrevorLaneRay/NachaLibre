@@ -1,4 +1,15 @@
 # Changelog
+## v1.2.0a
+### Added or Changed
+- Changed ReadCSVFile() to use file name/path variables directly in the function, rather than as arguments passed into it.
+    - This'll make it easier to grasp where the variables are used (now isolated to just the function that needs them).
+- Changed .gitignore to just exclude the entire ScriptLogs directory, instead of just one file inside it.
+- Started working on implementation of multiple batches for #2 in NachaConstructor().
+    - Pondered creation of multiple files from one CSV, but that'd mean you'd have to upload two items. Better to consolidate to a single file.
+    - Basically, when the deposit would exceed the bank's daily limit, a new "batch" would be created in the *.ach file, scheduling the deposit for the next day (TransactionDayOffset + 1).
+    - The tough part is making sure the *.ach's checksumming remains sane.
+    - (Incomplete for now, but implementing it slowly without breaking functionality.)
+
 ## v1.1.5b
 ### Added or Changed
 - Clarified what each array is for in ReadCSVFile().

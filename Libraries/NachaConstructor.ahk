@@ -5,7 +5,9 @@
 	nachaLineCounter := 0 ;Will contain the total number of lines that should be in the file. (Used for padding and blocks.)
 	totalEntryCounter := 0 ;Will contain the total number of entry and addenda records.
 	batchEntryCounter := 0 ;Will contain the current counter of entries in the current batch.
-	entryHash := 0 ;Will contain a sum of all entries' Recieving DFI IDs. (Sum of first 8 digits of each entry's routing number.)
+	batchNumber := 0 ;Iterates for each batch in the file.
+	batchEntryHash := 0 ;Will contain a sum of each batch's Recieving DFI IDs. (Sum of first 8 digits of each entry's routing number.)
+	fileEntryHash := 0 ;Will contain a sum of the file's Recieving DFI IDs. (Sum of first 8 digits of each entry's routing number.)
 	totalCreditAmount := 0 ;Used in File and Batch Control Records, for sanity check.
 
 	;Calculate dates for pay period, payday, and transaction day based on the current date and the offsets specified in the .ini file.
@@ -13,6 +15,7 @@
 	payPeriodEnd := DateAdd(A_Now, PayPeriodEndOffset, "days") ;Date that the pay period ended. (By default, two days ago).
 	payDay := FormatTime(DateAdd(A_Now, payDayOffset, "days"),"MMM dd") ;Descriptive date that payday is (Assuming this is tomorrow).
 	transactionDay := FormatTime(DateAdd(A_Now, transactionDayOffset, "days"), "yyMMdd") ;Day that the bank transaction should occur (Assuming this is tomorrow).
+	;Note: transactionDay should be iterated +1 each time a new batch is made to bypass daily bank limit.
 
 	;/===================File Header Record===================\
 	nachaLine .= "1" ;Record Type Code (This will never change.)
@@ -36,6 +39,7 @@
 	;\========================================================/
 
 	;/================Batch Header Record================\
+	;Note: We'll have to eventually include this in the main loop of entries, to create a second batch header record when the totalCreditAmount exceeds the maxPayrollAmount.
 	nachaLine .= "5" ;Record Type Code
 	nachaLine .= "220" ;Service Class Code
 	nachaLine .= SubStr(Format("{:-16}", payrollCompanyName), 1, 16) ;Company Name (TODO: Trim company name to 16chars *before* padding, so that it doesn't overflow if longer.)
@@ -44,7 +48,7 @@
 	nachaLine .= "PPD" ;Standard Entry Class Code
 	nachaLine .= Format("{:-10}", "PAYROLL") ;Company Entry Description
 	nachaLine .= payDay ;Company Descriptive Date (Payday)
-	nachaLine .= transactionDay ;Effective Entry Date (Date the transaction occurs on)
+	nachaLine .= transactionDay ;Effective Entry Date (Date the transaction occurs on. Iterate +1 to bypass daily bank limit.)
 	nachaLine .= "   " ;Settlement Date (Don't touch; Chase will modify this.
 	nachaLine .= "1" ;Originator Status Code
 	nachaLine .= SubStr(payrollRoutingNumber, 1, 8) ;Originating DFI Identification
@@ -58,6 +62,11 @@
 
 	;/================Entry Detail Records================\
 	;Let's go through the array of payroll entries passed to this function.
+	;Note: We'll have to change the loop behavior here, since we'll eventually need to split the payroll if it exceeds the daily bank limit.
+	;Perhaps we can save A_Index as a "resume" point for the next batch, break the loop for a new batch header, then start the loop as (csvLineCount - resumePoint).
+	;This way we can continue iterating through the same arrays without having to split it up.
+	;Each reference to A_Index in the loop would need to be changed, like (CSVField#Array[A_Index] + resumePoint) to account for the new starting point of the loop.
+	;Also need to iterate the transactionDay variable +1 for each new batch to bypass daily bank limit in the next Batch Header.
 	Loop csvLineCount {
 		totalEntryCounter += 1
 		batchEntryCounter += 1
@@ -65,9 +74,9 @@
 		;Take each field of the current entry, format it appropriately, and tack it all onto the current PPD Detail Record line.
 		ppdField1Data := "6" ;Record Type Code
 		if CSVField4Array[A_Index] = "Checking" {
-			ppdField2Data := "22" ;Indicates that the payee has a Checking account.
+			ppdField2Data := "22" ;Indicates that the payee's destination is a Checking account.
 		} else if CSVField4Array[A_Index] = "Savings" {
-			ppdField2Data := "32" ;Indicates that the payee has a Savings account.
+			ppdField2Data := "32" ;Indicates that the payee's destination is a Savings account.
 		}
 		;Panic if the routing number is not 9 digits, as that would invalidate the entire file and cause it to be rejected by the bank.
 		;TODO: This should be checked before we even attempt to construct the line, to avoid generating an invalid file.
@@ -76,12 +85,13 @@
 			Reload() ;For now, we'll just restart the script to prevent generating an invalid NACHA file.
 		}
 		ppdField3Data := SubStr(Format("{:09}", CSVField5Array[A_Index]), 1, 8) ;First eight digits of Employee Routing Number
-		entryHash += ppdField3Data
+		batchEntryHash += ppdField3Data ;Sum of entries' routing numbers - acts as a checksum to ensure the integrity of the current batch. (Gets reset to 0 at the beginning of each batch.)
+		fileEntryHash += ppdField3Data ;Sum of entries' routing numbers - acts as a checksum to ensure the integrity of the entire file. (Starts at 0 at the beginning of the file.)
 		ppdField4Data := SubStr(CSVField5Array[A_Index], -1, 1) ;Last digit of Employee Routing Number
 		ppdField5Data := Format("{:-17}", Trim(CSVField6Array[A_Index], " ")) ;Employee Account Number
 		ppdField6Data := Format("{:010}", StrReplace(CSVField7Array[A_Index], ".")) ;Dollar amount, formatted as $$$$$$$$¢¢
 		totalCreditAmount += CSVField7Array[A_Index] ;Total dollar amount thus far.
-		ppdField7Data := Format("{:-15}", Trim(CSVField1Array[A_Index], " ")) ;Individual Identification Number
+		ppdField7Data := Format("{:-15}", Trim(CSVField1Array[A_Index], " ")) ;Individual Identification Number (i.e.: Employee ID)
 		;NOTE: ACH files are purely ASCII, so any special characters in employee names (like accents, apostrophes, etc.) need to be converted to their closest ASCII equivalent, or else the remainder of this line gets offset by two characters to the left.
 		ppdField8Data := SubStr(Format("{:-22}", StrReplace(Trim(CSVField2Array[A_Index] . " " CSVField3Array[A_Index], " "), "’", "'")), 1, 22) ;Employee Name
 		ppdField9Data := Format("{:-2}", "") ;Discretionary Data (This is to be blank, just two spaces.)
@@ -108,7 +118,7 @@
 	nachaLine .= "8" ;Record Type Code
 	nachaLine .= "220" ;Service Class Code
 	nachaLine .= Format("{:06}", csvLineCount) ;Entry/Addenda Count
-	nachaLine .= SubStr(Format("{:010}", entryHash), -10, 10) ;Entry Hash
+	nachaLine .= SubStr(Format("{:010}", batchEntryHash), -10, 10) ;Entry Hash for all entries in the current batch.
 	nachaLine .= Format("{:012}", 0) ;Total Debit Amount
 	nachaLine .= Format("{:012}", StrReplace(Round(totalCreditAmount, 2), ".")) ;Total Credit Amount
 	nachaLine .= "0000000000" ;Company Identification (EIN for tax purposes - Does Chase want this as 0's?)
@@ -137,7 +147,7 @@
 	nachaLine .= Format("{:06}", 1) ;Batch Count
 	nachaLine .= Format("{:06}", nachaFileBlockCount) ;Block Count
 	nachaLine .= Format("{:08}", csvLineCount) ;Entry/Addenda Count
-	nachaLine .= SubStr(Format("{:010}", entryHash), -10, 10) ;Entry Hash
+	nachaLine .= SubStr(Format("{:010}", fileEntryHash), -10, 10) ;Entry Hash for all entries in the file.
 	nachaLine .= Format("{:012}", 0) ;Total Debit Amount
 	nachaLine .= Format("{:012}", StrReplace(Round(totalCreditAmount, 2), ".")) ;Total Credit Amount
 	nachaLine .= Format("{:-39}", "") ;Reserved

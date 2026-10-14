@@ -14,9 +14,8 @@
 	|	Ideas:
 	|		+Use OutputDebug for logging to aid in debugging with tools like VS Code?
 	|			+e.g.: OutputDebug A_Now ': Derp happened. Input file did not exist. Go Fish.'
-	|			+But when script relaunches as admin, the new process' output wouldn't be visible in the original process' debug output, so maybe not worth it?
-	|			+Maybe just use regular AHK logging for simplicity and reliability.
-	|			+Then again, VS Code can just attach to the new process after the UAC relaunch, so maybe it would work after all? Worth testing.
+	|			+Note that since the script relaunches as admin, in order for VS Code to capture the debug output, VS Code itself needs to be run as admin.
+	|				+Otherwise, once the script elevates to Admin, the original program has been closed and any debug output from the new process will not be captured.
 	|		+Maybe some sort of employee lookup functionality, to catch errors in the CSV before generating the NACHA file.
 	|			+i.e.: If an employee's name is misspelled, or if their routing number is wrong, it could cause the employee's transaction to be rejected by the bank. So maybe we could have some sort of reference file with correct employee info, and then cross-reference the CSV against that to catch any discrepancies before we generate the NACHA file.
 	|			+Could also be expanded to verify routing numbers against a database of valid routing numbers, to catch any typos there as well.
@@ -60,7 +59,7 @@
 InstallKeybdHook(true, true)
 
 ;Version & author of the script.
-scriptVersion := "1.1.5b"
+scriptVersion := "1.2.0a"
 scriptAuthor := "TrevorLaneRay"
 ;Create a little tray icon info.
 A_IconTip := "NachaLibre v." . scriptVersion
@@ -129,7 +128,7 @@ LogEvent("Event", "Script launched. Version: " . scriptVersion . ". Author: " . 
 	|Hotkeys
 	|	These hotkeys are for controlling the state of the script.
 	|	These will work anywhere, not just in a specific window.
-	|	Should be replaced later on by GUI buttons and such, but for now these are good for testing and basic functionality.
+	|	Should be replaced later on by GUI buttons and such, but for now these will suffice for testing and basic functionality.
 	\=======================================================================/
 */
 
@@ -142,8 +141,7 @@ F10:: Run(scriptSettingsFile) ;Open the .ini file used for settings.
 F11:: ;Main functionality.
 {
 	;Read the target CSV file into the script.
-	inputFilePath := csvFileFolderName . "\" . csvFileName
-	ReadCSVFile(inputFilePath)
+	ReadCSVFile()
 
 	;Output the processed CSV data into Nacha format.
 	NachaConstructor()

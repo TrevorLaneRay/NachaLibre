@@ -1,11 +1,11 @@
-ReadCSVFile(fileNameToRead) ;Parse the target CSV file, line by line, field by field.
+ReadCSVFile() ;Parse the target CSV file, line by line, field by field.
 {
 	if FileExist(scriptActiveIconFile)
 		TraySetIcon(scriptActiveIconFile)
 	;Load CSV file into an variable.
-	csvFile := FileRead(fileNameToRead)
+	csvFile := FileRead(csvFileFolderName . "\" . csvFileName)
 	global csvLineCount := 0
-	LogEvent("Event", "CSV Loaded:`n" . fileNameToRead)
+	LogEvent("Event", "CSV Loaded:`n" . csvFileFolderName . "\" . csvFileName)
 
 	;Some blank arrays for when we read the CSV, later to be used for Entry Record generation.
 	;These should be global arrays, so that NachaConstructor() can use them later.
